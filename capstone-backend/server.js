@@ -597,8 +597,11 @@ app.post('/api/customer/login', async (req, res) => {
   }
 });
 
+// General login endpoint (for admin/cashier) - MUST be before GET handler
 app.post('/api/login', async (req, res) => {
+  console.log('🔐 POST /api/login called');
   if (!db) {
+    console.error('❌ Database not ready for /api/login');
     return res.status(503).json({ message: 'Database not initialized yet. Please try again in a moment.' });
   }
   const { username, password } = req.body;
@@ -610,11 +613,21 @@ app.post('/api/login', async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     if (user.password !== password)
       return res.status(401).json({ message: 'Invalid password' });
+    console.log('✅ Login successful for:', username);
     res.json({ message: 'Login successful', user });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// GET handler for /api/login (returns helpful error for GET requests)
+app.get('/api/login', (req, res) => {
+  res.status(405).json({ 
+    error: 'Method not allowed', 
+    message: 'Login requires POST method. Please use POST /api/login with username and password in the request body.',
+    allowedMethods: ['POST']
+  });
 });
 
 app.post('/api/reset-password', async (req, res) => {
