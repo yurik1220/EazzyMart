@@ -561,14 +561,6 @@ app.post('/api/customer/register', async (req, res) => {
 });
 
 // GET /api/login - return error message (login requires POST)
-app.get('/api/login', (req, res) => {
-  res.status(405).json({ 
-    error: 'Method not allowed', 
-    message: 'Login requires POST method. Please use POST /api/login with username and password in the request body.',
-    allowedMethods: ['POST']
-  });
-});
-
 // Customer-specific login endpoint (matches frontend expectations)
 app.post('/api/customer/login', async (req, res) => {
   if (!db) {
