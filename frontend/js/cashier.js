@@ -834,9 +834,9 @@ async function initializeCashier() {
       productUpdateChannel.postMessage({ action: 'refresh' });
       console.log('🔔 Notified admin to refresh dashboard');
 
-      // Re-render current tab AND update tab counts
+      // Re-render: update tab counts and refresh the orders display
       await updateTabCounts(orders);
-      renderOrdersForCurrentTab(orders);
+      await renderOrders(); // This re-renders all tabs properly
       
       console.log('✅ UI refreshed after status update');
 
