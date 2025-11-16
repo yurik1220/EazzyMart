@@ -1862,6 +1862,18 @@ app.get('/api/routes', (req, res) => {
   res.json({ routes, total: routes.length });
 });
 
+// Serve static files AFTER all API routes (prevents interference with routes)
+const publicPath = path.join(__dirname, 'public');
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath));
+}
+
+// Serve uploaded files
+const uploadsPath = path.join(__dirname, 'uploads');
+if (fs.existsSync(uploadsPath)) {
+  app.use('/uploads', express.static(uploadsPath));
+}
+
 // Catch-all for undefined routes (MUST be last, after all routes)
 app.use((req, res) => {
   console.warn(`⚠️ 404: ${req.method} ${req.path} not found`);
