@@ -758,7 +758,7 @@ async function initializeCashier() {
         if (estimated_delivery_datetime) {
           requestBody.estimated_delivery_datetime = estimated_delivery_datetime;
         }
-        resp = await fetch(`window.API_BASE_URL/api/orders/${orderId}/status`, {
+        resp = await fetch(window.getApiUrl(`api/orders/${orderId}/status`), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
@@ -827,12 +827,18 @@ async function initializeCashier() {
         }
       }
 
-      // Persist locally
+      // Refresh orders from API
       orders = await getOrdersAPI() || [];
 
       // Notify Admin to refresh dashboard
       productUpdateChannel.postMessage({ action: 'refresh' });
       console.log('🔔 Notified admin to refresh dashboard');
+
+      // Re-render current tab AND update tab counts
+      await updateTabCounts(orders);
+      renderOrdersForCurrentTab(orders);
+      
+      console.log('✅ UI refreshed after status update');
 
       // SweetAlert confirmation
       let statusDisplay = newStatus.toLowerCase();

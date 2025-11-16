@@ -6,7 +6,7 @@ const cors = require('cors');
 const multer = require('multer');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const sgMail = require('@sendgrid/mail');
+const { Resend } = require('resend');
 
 // SQLite dependencies
 const sqlite3 = require('sqlite3');
@@ -1670,43 +1670,49 @@ app.post("/send-otp", async (req, res) => {
     const expires = Date.now() + 5 * 60 * 1000; // expires in 5 minutes
     otpStore[email] = { otp, expires };
 
-    // Set SendGrid API key from environment variable
-    const sendGridApiKey = process.env.SENDGRID_API_KEY;
+    // Set Resend API key from environment variable
+    const resendApiKey = process.env.RESEND_API_KEY;
     
-    if (!sendGridApiKey) {
-      console.warn('⚠️ SENDGRID_API_KEY not set - returning OTP in response for testing');
-      // For testing without SendGrid API key
+    if (!resendApiKey) {
+      console.warn('⚠️ RESEND_API_KEY not set - returning OTP in response for testing');
+      // For testing without Resend API key
       return res.json({ 
         success: true, 
         message: "OTP generated (email not configured)",
         debug_otp: otp, // ⚠️ REMOVE IN PRODUCTION
-        debug_note: "Set SENDGRID_API_KEY environment variable to enable email sending"
+        debug_note: "Set RESEND_API_KEY environment variable to enable email sending"
       });
     }
 
-    // Configure SendGrid
-    sgMail.setApiKey(sendGridApiKey);
+    // Initialize Resend client
+    const resend = new Resend(resendApiKey);
 
-    // Send email using SendGrid
+    // Send email using Resend
     try {
-      const msg = {
+      const { data, error } = await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || 'EazzyMart <onboarding@resend.dev>',
         to: email,
-        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@eazzymart.com', // Must be verified in SendGrid
         subject: 'Your OTP Code - EazzyMart',
-        text: `Your OTP is ${otp}. It will expire in 5 minutes.`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #333;">Your OTP Code</h2>
             <p>Your OTP code is:</p>
-            <h1 style="color: #007bff; font-size: 36px; letter-spacing: 5px;">${otp}</h1>
+            <div style="background: #f0f0f0; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+              <h1 style="color: #007bff; font-size: 36px; letter-spacing: 5px; margin: 0;">${otp}</h1>
+            </div>
             <p style="color: #666; font-size: 14px;">This code will expire in 5 minutes.</p>
             <p style="color: #999; font-size: 12px;">If you didn't request this code, please ignore this email.</p>
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+            <p style="color: #999; font-size: 11px;">EazzyMart - Your Trusted Online Grocery Store</p>
           </div>
         `,
-      };
+      });
 
-      await sgMail.send(msg);
-      console.log(`✅ OTP sent to ${email} via SendGrid`);
+      if (error) {
+        throw error;
+      }
+
+      console.log(`✅ OTP sent to ${email} via Resend (ID: ${data.id})`);
       
       res.json({ 
         success: true, 
@@ -1714,7 +1720,7 @@ app.post("/send-otp", async (req, res) => {
       });
     } catch (emailError) {
       // Email failed, but OTP is still stored
-      console.error(`❌ SendGrid error for ${email}:`, emailError);
+      console.error(`❌ Resend error for ${email}:`, emailError);
       console.warn('⚠️ OTP was generated and stored, but email delivery failed');
       
       // Return OTP in response for testing when email fails
@@ -1722,7 +1728,7 @@ app.post("/send-otp", async (req, res) => {
         success: true, 
         message: "OTP generated but email failed",
         debug_otp: otp, // ⚠️ TEMPORARY - REMOVE IN PRODUCTION
-        debug_error: emailError.message
+        debug_error: emailError.message || emailError
       });
     }
   } catch (error) {
@@ -1820,45 +1826,48 @@ app.post("/send-email", async (req, res) => {
       return res.status(400).json({ success: false, message: "Email and sales data required" });
     }
 
-    // Set SendGrid API key from environment variable
-    const sendGridApiKey = process.env.SENDGRID_API_KEY;
+    // Set Resend API key from environment variable
+    const resendApiKey = process.env.RESEND_API_KEY;
     
-    if (!sendGridApiKey) {
-      console.warn('⚠️ SENDGRID_API_KEY not set - email not sent');
+    if (!resendApiKey) {
+      console.warn('⚠️ RESEND_API_KEY not set - email not sent');
       return res.json({ 
         success: false, 
-        message: "Email service not configured. Set SENDGRID_API_KEY environment variable."
+        message: "Email service not configured. Set RESEND_API_KEY environment variable."
       });
     }
 
-    // Configure SendGrid
-    sgMail.setApiKey(sendGridApiKey);
+    // Initialize Resend client
+    const resend = new Resend(resendApiKey);
 
-    // Prepare email
-    const msg = {
+    // Send email using Resend
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'EazzyMart <onboarding@resend.dev>',
       to: email,
-      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@eazzymart.com',
       subject: 'Your order has been Accepted - EazzyMart',
-      text: `Hi ${sales.customer}, Good news! Your order ${sales.id} is on its way to you. You can expect delivery soon. Thank you for shopping with us!`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333;">Hi ${sales.customer},</h2>
           <p>Good news! Your order <strong>${sales.id}</strong> is on its way to you.</p>
           <p>You can expect delivery soon. Thank you for shopping with us!</p>
           <p>If you have any questions or need assistance, feel free to reply to this email.</p>
+          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
           <p style="margin-top: 30px;">Best regards,<br><strong>EAZZY MART</strong></p>
+          <p style="color: #999; font-size: 11px;">EazzyMart - Your Trusted Online Grocery Store</p>
         </div>
       `,
-    };
+    });
 
-    // Send email
-    await sgMail.send(msg);
-    console.log(`✅ Order confirmation email sent to ${email}`);
+    if (error) {
+      throw error;
+    }
+
+    console.log(`✅ Order confirmation email sent to ${email} (ID: ${data.id})`);
     res.json({ success: true, message: "Email sent successfully" });
     
   } catch (error) {
     console.error('❌ Send email error:', error);
-    res.status(500).json({ success: false, message: "Failed to send email", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to send email", error: error.message || error });
   }
 });
 
