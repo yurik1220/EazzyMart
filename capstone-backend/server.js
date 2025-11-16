@@ -44,6 +44,16 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
+
+// Request logging middleware (early in chain to log all requests)
+app.use((req, res, next) => {
+  // Skip logging for static assets and health checks
+  if (!req.path.startsWith('/uploads') && req.path !== '/api/ping' && req.path !== '/') {
+    console.log(`📥 ${req.method} ${req.path} - Origin: ${req.get('origin') || 'none'}`);
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
@@ -1862,15 +1872,6 @@ app.get('/api/routes', (req, res) => {
     }
   });
   res.json({ routes, total: routes.length });
-});
-
-// Middleware to log all incoming requests (for debugging)
-app.use((req, res, next) => {
-  // Skip logging for static assets and health checks
-  if (!req.path.startsWith('/uploads') && req.path !== '/api/ping' && req.path !== '/') {
-    console.log(`📥 ${req.method} ${req.path} - Origin: ${req.get('origin') || 'none'}`);
-  }
-  next();
 });
 
 // Catch-all for undefined routes (MUST be last, after all routes)
