@@ -262,7 +262,10 @@ const otpStore = {};
   // Run auto-completion check after database is ready
   autoCompleteDeliveries();
   setInterval(autoCompleteDeliveries, 60 * 60 * 1000);
-})();
+})().catch(err => {
+  console.error('❌ Failed to initialize database:', err);
+  process.exit(1);
+});
 
 // ============================================
 // ORDER MANAGEMENT HELPERS
@@ -526,6 +529,9 @@ app.post('/api/customer/register', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
+  if (!db) {
+    return res.status(503).json({ message: 'Database not initialized yet. Please try again in a moment.' });
+  }
   const { username, password } = req.body;
   try {
     const user = await db.get(`SELECT * FROM users WHERE username = ?`, [username]);
@@ -534,6 +540,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid password' });
     res.json({ message: 'Login successful', user });
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1669,12 +1676,35 @@ app.get('/', (req, res) => {
 // HEALTH CHECK
 // ============================================
 app.get('/api/ping', (req, res) => {
-  res.json({ ok: true, message: 'Server is running with SQLite' });
+  res.json({ 
+    ok: true, 
+    message: 'Server is running with SQLite',
+    databaseReady: !!db 
+  });
 });
 
 // ============================================
-// START SERVER
+// START SERVER (only after database is ready)
 // ============================================
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server is running on port ${port}`);
-});
+// Wait for database to be ready before starting server
+(async () => {
+  // Wait a bit for database to initialize
+  let attempts = 0;
+  while (!db && attempts < 50) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    attempts++;
+  }
+  
+  if (!db) {
+    console.error('❌ Database failed to initialize. Starting server anyway but routes may fail.');
+  }
+  
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`✅ Server is running on port ${port}`);
+    if (db) {
+      console.log('✅ Database is ready');
+    } else {
+      console.warn('⚠️ Database not ready yet');
+    }
+  });
+})();
