@@ -1176,8 +1176,41 @@
     renderOrders(ongoingOrders, 'ongoing-orders-list', 'ongoing-empty');
     updateTabCounts();
     
-    // Pre-render return/refund requests (but keep hidden until tab is clicked)
-    renderReturnRefundRequests();
+    // Don't pre-render return/refund requests on initial load
+    // They will render when the Return/Refund tab is clicked
+    // renderReturnRefundRequests();
+
+    // Add logout button handler
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        const result = await Swal.fire({
+          icon: 'warning',
+          title: 'Confirm Logout',
+          text: 'Do you really want to log out?',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, Logout'
+        });
+
+        if (!result.isConfirmed) return;
+        
+        await Swal.fire({
+          icon: 'success',
+          title: 'Logged Out',
+          text: 'Redirecting to login page...',
+          showConfirmButton: false,
+          timer: 1200
+        });
+
+        // Clear user and redirect
+        localStorage.removeItem('currentUser');
+        window.location.href = 'login.html';
+      });
+    }
 
     // Listen for new orders via BroadcastChannel
     const orderChannel = new BroadcastChannel('orders');
