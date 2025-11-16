@@ -6,7 +6,7 @@ const cors = require('cors');
 const multer = require('multer');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 // SQLite dependencies
 const sqlite3 = require('sqlite3');
@@ -1665,76 +1665,66 @@ app.post("/send-otp", async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid email format" });
     }
 
-    // Use environment variables if available, otherwise use hardcoded values
-    const emailUser = process.env.EMAIL_USER || "nodomailer@gmail.com";
-    const emailPass = process.env.EMAIL_PASS || "tilwuymdmlgftizy";
-
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: emailUser,
-        pass: emailPass, // Google App Password
-      },
-      // Add timeout configuration for Render deployment
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-    });
-    
-    // Verify transporter connection (don't fail if email service is down)
-    // Use Promise.race to add timeout to verification
-    try {
-      const verifyPromise = transporter.verify();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Verification timeout')), 5000)
-      );
-      await Promise.race([verifyPromise, timeoutPromise]);
-      console.log('✅ Email transporter verified');
-    } catch (verifyError) {
-      console.warn('⚠️ Email transporter verification failed:', verifyError.message);
-      // Continue anyway - email might still work
-    }
-
+    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
     const expires = Date.now() + 5 * 60 * 1000; // expires in 5 minutes
     otpStore[email] = { otp, expires };
 
-    // Send email with timeout handling
-    const sendMailPromise = transporter.sendMail({
-      from: '"EazzyMart" <nodomailer@gmail.com>',
-      to: email,
-      subject: "Your OTP Code",
-      text: `Your OTP is ${otp}. It will expire in 5 minutes.`,
-      html: `<h2>Your OTP Code</h2><p>Your OTP is <strong>${otp}</strong>. It will expire in 5 minutes.</p>`,
-    });
+    // Set SendGrid API key from environment variable
+    const sendGridApiKey = process.env.SENDGRID_API_KEY;
     
-    // Add 15 second timeout for sending email
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Email send timeout - service may be unavailable')), 15000)
-    );
-    
-    try {
-      const mailResult = await Promise.race([sendMailPromise, timeoutPromise]);
-      console.log(`✅ OTP sent to ${email}`, mailResult.messageId);
-    } catch (emailError) {
-      // Email failed, but OTP is still stored - log the error but don't fail the request
-      console.warn(`⚠️ Email send failed for ${email}:`, emailError.message);
-      console.warn('⚠️ OTP was generated and stored, but email delivery failed');
-      // Continue - OTP is stored in memory, user can still verify if they have the OTP
-      // In production, you might want to return the OTP in response for testing, or use SMS
+    if (!sendGridApiKey) {
+      console.warn('⚠️ SENDGRID_API_KEY not set - returning OTP in response for testing');
+      // For testing without SendGrid API key
+      return res.json({ 
+        success: true, 
+        message: "OTP generated (email not configured)",
+        debug_otp: otp, // ⚠️ REMOVE IN PRODUCTION
+        debug_note: "Set SENDGRID_API_KEY environment variable to enable email sending"
+      });
     }
 
-    // Always return success if OTP was generated and stored
-    // The OTP is stored in otpStore[email] even if email fails
-    res.json({ 
-      success: true, 
-      message: "OTP sent successfully. Please check your email.",
-      // For development/testing: include OTP in response if email fails
-      // Remove this in production!
-      ...(process.env.NODE_ENV === 'development' && { 
-        debug: "If email fails, check server logs for OTP" 
-      })
-    });
+    // Configure SendGrid
+    sgMail.setApiKey(sendGridApiKey);
+
+    // Send email using SendGrid
+    try {
+      const msg = {
+        to: email,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@eazzymart.com', // Must be verified in SendGrid
+        subject: 'Your OTP Code - EazzyMart',
+        text: `Your OTP is ${otp}. It will expire in 5 minutes.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Your OTP Code</h2>
+            <p>Your OTP code is:</p>
+            <h1 style="color: #007bff; font-size: 36px; letter-spacing: 5px;">${otp}</h1>
+            <p style="color: #666; font-size: 14px;">This code will expire in 5 minutes.</p>
+            <p style="color: #999; font-size: 12px;">If you didn't request this code, please ignore this email.</p>
+          </div>
+        `,
+      };
+
+      await sgMail.send(msg);
+      console.log(`✅ OTP sent to ${email} via SendGrid`);
+      
+      res.json({ 
+        success: true, 
+        message: "OTP sent successfully. Please check your email."
+      });
+    } catch (emailError) {
+      // Email failed, but OTP is still stored
+      console.error(`❌ SendGrid error for ${email}:`, emailError);
+      console.warn('⚠️ OTP was generated and stored, but email delivery failed');
+      
+      // Return OTP in response for testing when email fails
+      res.json({ 
+        success: true, 
+        message: "OTP generated but email failed",
+        debug_otp: otp, // ⚠️ TEMPORARY - REMOVE IN PRODUCTION
+        debug_error: emailError.message
+      });
+    }
   } catch (error) {
     console.error("❌ Send OTP error:", error);
     console.error("❌ Error details:", {
@@ -1822,39 +1812,53 @@ app.post("/verify-otp", (req, res) => {
 });
 
 app.post("/send-email", async (req, res) => {
-  const { email, sales } = req.body;
-  // 1. Create transporter
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'nodomailer@gmail.com',
-      pass: 'tilwuymdmlgftizy',
-    },
-  });
-
-  // 2. Email options
-  const mailOptions = {
-    from: 'EAZZY MART',
-    to: email,
-    subject: 'Your order has been Accepted.',
-    html: `<h2>Hi ${sales.customer},</h2>
-
-          <p>Good news! Your order <strong>${sales.id}</strong> is on its way to you.</p>
-
-          <p>You can expect delivery soon. Thank you for shopping with us!</p>
-
-          <p>If you have any questions or need assistance, feel free to reply to this email.</p>
-
-          <p>Best regards,<br>
-          <strong>EAZZY MART</strong></p>`,
-  };
-
-  // 3. Send email
   try {
-    const info = await transporter.sendMail(mailOptions);
-    res.json({ success: true, message: "Email sent: " + info.message });
+    const { email, sales } = req.body;
+    
+    // Validate inputs
+    if (!email || !sales) {
+      return res.status(400).json({ success: false, message: "Email and sales data required" });
+    }
+
+    // Set SendGrid API key from environment variable
+    const sendGridApiKey = process.env.SENDGRID_API_KEY;
+    
+    if (!sendGridApiKey) {
+      console.warn('⚠️ SENDGRID_API_KEY not set - email not sent');
+      return res.json({ 
+        success: false, 
+        message: "Email service not configured. Set SENDGRID_API_KEY environment variable."
+      });
+    }
+
+    // Configure SendGrid
+    sgMail.setApiKey(sendGridApiKey);
+
+    // Prepare email
+    const msg = {
+      to: email,
+      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@eazzymart.com',
+      subject: 'Your order has been Accepted - EazzyMart',
+      text: `Hi ${sales.customer}, Good news! Your order ${sales.id} is on its way to you. You can expect delivery soon. Thank you for shopping with us!`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Hi ${sales.customer},</h2>
+          <p>Good news! Your order <strong>${sales.id}</strong> is on its way to you.</p>
+          <p>You can expect delivery soon. Thank you for shopping with us!</p>
+          <p>If you have any questions or need assistance, feel free to reply to this email.</p>
+          <p style="margin-top: 30px;">Best regards,<br><strong>EAZZY MART</strong></p>
+        </div>
+      `,
+    };
+
+    // Send email
+    await sgMail.send(msg);
+    console.log(`✅ Order confirmation email sent to ${email}`);
+    res.json({ success: true, message: "Email sent successfully" });
+    
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to send email" });
+    console.error('❌ Send email error:', error);
+    res.status(500).json({ success: false, message: "Failed to send email", error: error.message });
   }
 });
 
