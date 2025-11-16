@@ -1648,6 +1648,24 @@ app.post("/send-email", async (req, res) => {
 
 
 // ============================================
+// ROOT ROUTE
+// ============================================
+app.get('/', (req, res) => {
+  res.json({ 
+    ok: true, 
+    message: 'EazzyMart Backend API is running',
+    database: 'SQLite',
+    endpoints: {
+      health: '/api/ping',
+      items: '/api/items',
+      sales: '/api/sales',
+      orders: '/api/orders',
+      users: '/api/user'
+    }
+  });
+});
+
+// ============================================
 // HEALTH CHECK
 // ============================================
 app.get('/api/ping', (req, res) => {
@@ -1657,6 +1675,6 @@ app.get('/api/ping', (req, res) => {
 // ============================================
 // START SERVER
 // ============================================
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server is running on port ${port}`);
 });

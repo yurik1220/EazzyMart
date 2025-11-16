@@ -452,7 +452,10 @@
   </div>
 
   <script>
-    const API_URL = 'http://localhost:3000/api/user';
+    const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:3000'
+      : 'https://eazzymart-backend.onrender.com';
+    const API_URL = `${API_BASE_URL}/api/user`;
     const userForm = document.getElementById('userForm');
     const userTable = document.querySelector('#userTable tbody');
     const resetBtn = document.getElementById('resetBtn');
