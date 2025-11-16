@@ -218,6 +218,8 @@
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- API Configuration - Must be loaded before other scripts -->
+  <script src="../js/config.js"></script>
 
   <script>
     const loginCard = document.getElementById('login-card');
@@ -321,10 +323,7 @@
 
       if (otpResult === true) {
         try {
-          const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:3000'
-            : 'https://eazzymart-backend.onrender.com';
-          const res = await fetch(`${API_BASE_URL}/api/customer/register`, {
+          const res = await fetch(window.getApiUrl('api/customer/register'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -354,10 +353,7 @@
     // === SEND OTP ===
     async function SendOtp(email) {
       try {
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:3000'
-          : 'https://eazzymart-backend.onrender.com';
-        const res = await fetch(`${API_BASE_URL}/send-otp`, {
+        const res = await fetch(window.getApiUrl('send-otp'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({email})
@@ -381,10 +377,7 @@
     // === verify OTP ===
     async function VerifyOtp(email, otp) {
       try {
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:3000'
-          : 'https://eazzymart-backend.onrender.com';
-        const result = await fetch(`${API_BASE_URL}/verify-otp`, {
+        const result = await fetch(window.getApiUrl('verify-otp'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, otp })
@@ -412,10 +405,7 @@
       }
 
       try {
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:3000'
-          : 'https://eazzymart-backend.onrender.com';
-        const res = await fetch(`${API_BASE_URL}/api/login`, {
+        const res = await fetch(window.getApiUrl('api/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password, role: 'customer' })
@@ -455,10 +445,7 @@
       }
 
       try {
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:3000'
-          : 'https://eazzymart-backend.onrender.com';
-        const res = await fetch(`${API_BASE_URL}/api/reset-password`, {
+        const res = await fetch(window.getApiUrl('api/reset-password'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, newPassword })

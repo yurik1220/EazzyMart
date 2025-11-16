@@ -55,7 +55,7 @@ async function onUpdateIsDelivered(select, orderId) {
   }).then(async () => {
     try {
       // Try new endpoint first (using order_id)
-      let resp = await fetch(`https://eazzymart-backend.onrender.com/api/orders/${orderId}/status`, {
+      let resp = await fetch(window.getApiUrl(`api/orders/${orderId}/status`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -65,7 +65,7 @@ async function onUpdateIsDelivered(select, orderId) {
 
       // If that fails, try old endpoint
       if (!resp.ok) {
-        resp = await fetch('https://eazzymart-backend.onrender.com/api/sales/delivered', {
+        resp = await fetch(window.getApiUrl('api/sales/delivered'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -154,7 +154,7 @@ async function initializeCashier() {
 
     // Fetch return/refund requests count
     try {
-      const response = await fetch('https://eazzymart-backend.onrender.com/api/return-refund');
+      const response = await fetch(window.getApiUrl('api/return-refund'));
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.requests) {
@@ -327,7 +327,7 @@ async function initializeCashier() {
     const emptyMessage = document.getElementById('return-refund-empty-message');
     
     try {
-      const response = await fetch('https://eazzymart-backend.onrender.com/api/return-refund');
+      const response = await fetch(window.getApiUrl('api/return-refund'));
       const data = await response.json();
       
       if (!response.ok || !data.success) {
@@ -372,7 +372,7 @@ async function initializeCashier() {
         // Image preview
         let imageCell = '<span class="text-muted">No image</span>';
         if (request.image_path) {
-          const imageUrl = `https://eazzymart-backend.onrender.com/${request.image_path}`;
+          const imageUrl = `${window.API_BASE_URL}/${request.image_path}`;
           imageCell = `<a href="${imageUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
             <i class="bi bi-image"></i> View
           </a>`;
@@ -468,7 +468,7 @@ async function initializeCashier() {
         if (!result.isConfirmed) return;
       }
 
-      const response = await fetch(`https://eazzymart-backend.onrender.com/api/return-refund/${requestId}/status`, {
+      const response = await fetch(window.getApiUrl(`api/return-refund/${requestId}/status`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus, admin_notes: adminNotes })
@@ -510,7 +510,7 @@ async function initializeCashier() {
   }
 
   async function getOrdersAPI() {
-    const res = await fetch('https://eazzymart-backend.onrender.com/api/sales');
+    const res = await fetch(window.getApiUrl('api/sales'));
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Login failed');
     return data;
@@ -674,7 +674,7 @@ async function initializeCashier() {
   // ======== Update Estimated Delivery Time Only ========
   async function updateEstimatedDeliveryTime(orderId, estimated_delivery_datetime) {
     try {
-      const resp = await fetch(`https://eazzymart-backend.onrender.com/api/orders/${orderId}/status`, {
+      const resp = await fetch(window.getApiUrl(`api/orders/${orderId}/status`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -738,13 +738,13 @@ async function initializeCashier() {
       let resp;
       if (newStatus === 'Accepted') {
         // Use the new accept endpoint (changes to "In Process")
-        resp = await fetch(`https://eazzymart-backend.onrender.com/api/orders/${orderId}/accept`, {
+        resp = await fetch(window.getApiUrl(`api/orders/${orderId}/accept`), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' }
         });
       } else if (newStatus === 'Rejected' || newStatus === 'Cancelled') {
         // Use the cancel endpoint (pass status to distinguish between Rejected and Cancelled)
-        resp = await fetch(`https://eazzymart-backend.onrender.com/api/orders/${orderId}/cancel`, {
+        resp = await fetch(window.getApiUrl(`api/orders/${orderId}/cancel`), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -758,7 +758,7 @@ async function initializeCashier() {
         if (estimated_delivery_datetime) {
           requestBody.estimated_delivery_datetime = estimated_delivery_datetime;
         }
-        resp = await fetch(`https://eazzymart-backend.onrender.com/api/orders/${orderId}/status`, {
+        resp = await fetch(`window.API_BASE_URL/api/orders/${orderId}/status`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
@@ -816,7 +816,7 @@ async function initializeCashier() {
         console.log("Calling send email", emailPayload);
 
         try {
-          const resp1 = await fetch('https://eazzymart-backend.onrender.com/send-email', {
+          const resp1 = await fetch(window.getApiUrl('send-email'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(emailPayload)

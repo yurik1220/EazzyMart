@@ -55,7 +55,7 @@
 
     async function loginUser(username, password) {
       try {
-        const res = await fetch('https://eazzymart-backend.onrender.com/api/customer/login', {
+        const res = await fetch(window.getApiUrl('api/customer/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password, role: 'customer' })
@@ -79,7 +79,7 @@
 
     async function registerUser(username, password) {
       try {
-        const res = await fetch('https://eazzymart-backend.onrender.com/api/customer/register', {
+        const res = await fetch(window.getApiUrl('api/customer/register'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password, role: 'customer' })
@@ -241,7 +241,7 @@ function openBrowse() {
     // added api call
      async function getItemsfromDB(){
       try {
-        const response = await fetch('https://eazzymart-backend.onrender.com/api/items');
+        const response = await fetch(window.getApiUrl('api/items'));
         if (!response.ok) return [];
         const data = await response.json();
         if (!Array.isArray(data)) return [];
@@ -792,7 +792,7 @@ try {
 
 // Send order to backend
 try {
-  const response = await fetch('https://eazzymart-backend.onrender.com/api/sales', {
+  const response = await fetch(window.getApiUrl('api/sales'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newOrder)

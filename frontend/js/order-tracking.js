@@ -17,7 +17,7 @@
       
       // Also try to fetch from API
       try {
-        const response = await fetch('https://eazzymart-backend.onrender.com/api/items');
+        const response = await fetch(window.getApiUrl('api/items'));
         if (response.ok) {
           const apiProducts = await response.json();
           if (Array.isArray(apiProducts) && apiProducts.length > 0) {
@@ -59,7 +59,7 @@
     // Fetch orders from API using new customer endpoint
     if (currentUser && currentUser.username) {
       try {
-        const response = await fetch(`https://eazzymart-backend.onrender.com/api/orders/customer?username=${encodeURIComponent(currentUser.username)}`);
+        const response = await fetch(window.getApiUrl(`api/orders/customer?username=${encodeURIComponent(currentUser.username)}`));
         if (response.ok) {
           const data = await response.json();
           if (data.success && Array.isArray(data.orders)) {
@@ -72,7 +72,7 @@
         console.debug('API fetch failed, trying fallback:', err);
         // Fallback to old endpoint
         try {
-          const response = await fetch('https://eazzymart-backend.onrender.com/api/sales');
+          const response = await fetch(window.getApiUrl('api/sales'));
           if (response.ok) {
             const apiOrders = await response.json();
             if (Array.isArray(apiOrders)) {
@@ -150,7 +150,7 @@
     if (currentUser && currentUser.username) {
       try {
             // Use username parameter to filter on backend
-            const response = await fetch(`https://eazzymart-backend.onrender.com/api/return-refund?username=${encodeURIComponent(currentUser.username)}`);
+            const response = await fetch(window.getApiUrl(`api/return-refund?username=${encodeURIComponent(currentUser.username)}`));
             if (response.ok) {
               const data = await response.json();
               if (data.success && Array.isArray(data.requests)) {
@@ -292,7 +292,7 @@
             console.log('⚠️ returnRefundRequests is empty, re-fetching...');
             // Re-fetch return/refund requests
             if (currentUser && currentUser.username) {
-              fetch(`https://eazzymart-backend.onrender.com/api/return-refund?username=${encodeURIComponent(currentUser.username)}`)
+              fetch(window.getApiUrl(`api/return-refund?username=${encodeURIComponent(currentUser.username)}`))
                 .then(response => {
                   if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -550,7 +550,7 @@
           // If order not found in map, try to fetch it from API
           if (!order && request.order_id && currentUser && currentUser.username) {
             try {
-              const orderResponse = await fetch(`https://eazzymart-backend.onrender.com/api/orders/customer?username=${encodeURIComponent(currentUser.username)}`);
+              const orderResponse = await fetch(window.getApiUrl(`api/orders/customer?username=${encodeURIComponent(currentUser.username)}`));
               if (orderResponse.ok) {
                 const orderData = await orderResponse.json();
                 if (orderData.success && Array.isArray(orderData.orders)) {
@@ -643,7 +643,7 @@
       // Image preview
       let imagePreview = '';
       if (request.image_path) {
-        const imageUrl = `https://eazzymart-backend.onrender.com/${request.image_path}`;
+        const imageUrl = `${window.API_BASE_URL}/${request.image_path}`;
         imagePreview = `
           <div class="mb-2">
             <a href="${imageUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
@@ -701,7 +701,7 @@
       if (product && product.images) {
         const imageUrl = product.images.startsWith('http') 
           ? product.images 
-          : `https://eazzymart-backend.onrender.com/${product.images}`;
+          : `${window.API_BASE_URL}/${product.images}`;
         return `<img src="${imageUrl}" alt="${escapeHtml(product.names || 'Product')}" onerror="this.parentElement.innerHTML='<div class=\\'item-image-placeholder\\'><i class=\\'fas fa-image\\'></i></div>'">`;
       }
       
@@ -711,7 +711,7 @@
     // Mark order as received
     window.markOrderReceived = async function(orderId) {
       try {
-        const response = await fetch(`https://eazzymart-backend.onrender.com/api/orders/${orderId}/received`, {
+        const response = await fetch(window.getApiUrl(`api/orders/${orderId}/received`), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' }
         });
@@ -820,7 +820,7 @@
 
     async function performCancel(orderId, reason) {
       try {
-        const response = await fetch(`https://eazzymart-backend.onrender.com/api/orders/${orderId}/cancel-customer`, {
+        const response = await fetch(window.getApiUrl(`api/orders/${orderId}/cancel-customer`), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ reason: reason })
@@ -1129,7 +1129,7 @@
           formData.append('image', imageFile);
         }
 
-        const response = await fetch('https://eazzymart-backend.onrender.com/api/return-refund', {
+        const response = await fetch(window.getApiUrl('api/return-refund'), {
           method: 'POST',
           body: formData
         });

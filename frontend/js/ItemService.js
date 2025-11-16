@@ -1,6 +1,6 @@
 async function getItemsfromDB(){
   try {
-    const response = await fetch('https://eazzymart-backend.onrender.com/api/items');
+    const response = await fetch(window.getApiUrl('api/items'));
     const data = await response.json();
     console.log('API Data: ', data);
     return data;

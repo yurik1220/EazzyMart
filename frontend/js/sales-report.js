@@ -13,12 +13,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function initializeReport() {
   try {
     // Fetch all orders
-    const ordersRes = await fetch('https://eazzymart-backend.onrender.com/api/sales');
+    const ordersRes = await fetch(window.getApiUrl('api/sales'));
     allOrders = await ordersRes.json();
     
     // Fetch return/refund requests
     try {
-      const refundsRes = await fetch('https://eazzymart-backend.onrender.com/api/return-refund');
+      const refundsRes = await fetch(window.getApiUrl('api/return-refund'));
       const refundsData = await refundsRes.json();
       allReturnRefunds = refundsData.success ? refundsData.requests : [];
     } catch (err) {

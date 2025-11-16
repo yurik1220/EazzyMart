@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ===== Add Item to DB =====
   async function ItemAdder(item) {
     try {
-      const response = await fetch("https://eazzymart-backend.onrender.com/api/items", {
+      const response = await fetch(window.getApiUrl("api/items"), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item)
@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (editingId) {
         newItem.id = editingId;
         try {
-          const resp = await fetch(`https://eazzymart-backend.onrender.com/api/items/${editingId}`, {
+          const resp = await fetch(window.getApiUrl(`api/items/${editingId}`), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newItem)
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ===== Fetch Items (with local fallback) =====
   async function getItemsfromDB() {
     try {
-      const response = await fetch('https://eazzymart-backend.onrender.com/api/items');  //failed to fetch
+      const response = await fetch(window.getApiUrl('api/items'));  //failed to fetch
       if (!response.ok) throw new Error('Server error');
       const data = await response.json();
       if (Array.isArray(data)) {
@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         deleteBtn.addEventListener('click', async () => {
           if (confirm(`Are you sure you want to delete "${item.names}"?`)) {
           try {
-            const resp = await fetch(`https://eazzymart-backend.onrender.com/api/items/${item.id}`, { method: 'DELETE' });
+            const resp = await fetch(window.getApiUrl(`api/items/${item.id}`), { method: 'DELETE' });
             items = items.filter(i => i.id !== item.id);
             saveAndBroadcast('delete', null, item.id);
               renderItems(filter);
@@ -523,12 +523,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function initializeReport() {
     try {
       // Fetch all orders
-      const ordersRes = await fetch('https://eazzymart-backend.onrender.com/api/sales');
+      const ordersRes = await fetch(window.getApiUrl('api/sales'));
       reportAllOrders = await ordersRes.json();
       
       // Fetch return/refund requests
   try {
-        const refundsRes = await fetch('https://eazzymart-backend.onrender.com/api/return-refund');
+        const refundsRes = await fetch(window.getApiUrl('api/return-refund'));
         const refundsData = await refundsRes.json();
         reportAllReturnRefunds = refundsData.success ? refundsData.requests : [];
       } catch (err) {
@@ -1403,7 +1403,7 @@ function formatDate(dateString) {
     // Fetch orders and sales data
     let allOrders = [];
     try {
-      const ordersRes = await fetch('https://eazzymart-backend.onrender.com/api/sales');
+      const ordersRes = await fetch(window.getApiUrl('api/sales'));
       if (ordersRes.ok) {
         allOrders = await ordersRes.json();
       }
@@ -1416,7 +1416,7 @@ function formatDate(dateString) {
     // Fetch customers
     let customers = [];
     try {
-      const usersRes = await fetch('https://eazzymart-backend.onrender.com/api/user');
+      const usersRes = await fetch(window.getApiUrl('api/user'));
       if (usersRes.ok) {
         const users = await usersRes.json();
         customers = users.filter(u => u.role && u.role.toLowerCase() === 'customer');
