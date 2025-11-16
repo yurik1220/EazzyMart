@@ -528,11 +528,23 @@ app.post('/api/customer/register', async (req, res) => {
   }
 });
 
+// GET /api/login - return error message (login requires POST)
+app.get('/api/login', (req, res) => {
+  res.status(405).json({ 
+    error: 'Method not allowed', 
+    message: 'Login requires POST method. Please use POST /api/login with username and password in the request body.',
+    allowedMethods: ['POST']
+  });
+});
+
 app.post('/api/login', async (req, res) => {
   if (!db) {
     return res.status(503).json({ message: 'Database not initialized yet. Please try again in a moment.' });
   }
   const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required' });
+  }
   try {
     const user = await db.get(`SELECT * FROM users WHERE username = ?`, [username]);
     if (!user) return res.status(404).json({ message: 'User not found' });
