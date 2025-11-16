@@ -1864,13 +1864,24 @@ app.get('/api/routes', (req, res) => {
   res.json({ routes, total: routes.length });
 });
 
-// Catch-all for undefined routes
+// Middleware to log all incoming requests (for debugging)
+app.use((req, res, next) => {
+  // Skip logging for static assets and health checks
+  if (!req.path.startsWith('/uploads') && req.path !== '/api/ping' && req.path !== '/') {
+    console.log(`📥 ${req.method} ${req.path} - Origin: ${req.get('origin') || 'none'}`);
+  }
+  next();
+});
+
+// Catch-all for undefined routes (MUST be last, after all routes)
 app.use((req, res) => {
+  console.warn(`⚠️ 404: ${req.method} ${req.path} not found`);
   res.status(404).json({ 
     error: 'Route not found', 
     path: req.path,
     method: req.method,
-    message: `The route ${req.method} ${req.path} does not exist.`
+    message: `The route ${req.method} ${req.path} does not exist.`,
+    hint: 'Check /api/routes for available endpoints'
   });
 });
 
