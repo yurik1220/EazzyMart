@@ -516,36 +516,40 @@ app.post('/api/generate-stock-report', async (req, res) => {
 // AUTH: Register / Login
 // ============================================
 app.post('/api/customer/register', async (req, res) => {
+  if (!db) {
+    return res.status(503).json({ success: false, message: 'Database not initialized yet. Please try again in a moment.' });
+  }
+  
   const { username, password, firstname, lastname, birthDate, gender } = req.body;
   if (!username || !password)
-    return res.status(400).json({ message: 'Username and password required' });
+    return res.status(400).json({ success: false, message: 'Username and password required' });
 
   try {
     const existing = await db.get(`SELECT id FROM users WHERE username = ?`, [username]);
-    if (existing) return res.status(400).json({ message: 'Username already exists' });
+    if (existing) return res.status(400).json({ success: false, message: 'Username already exists' });
     
     // Username validation (3–20 chars, letters/numbers/_ only)
     if (username.length < 6 || username.length > 50) {
       return res.status(400).json({
-        message:
-          'Username must atleast 6–50 characters long.',
+        success: false,
+        message: 'Username must atleast 6–50 characters long.',
       });
     }
 
     if (password.length < 8) {
       return res.status(400).json({
-        message:
-          'Password must be at least 8 characters long.',
+        success: false,
+        message: 'Password must be at least 8 characters long.',
       });
     }
 
     await db.run(`INSERT INTO users (username, password, role, firstname, lastname, birthDate, gender) VALUES (?, ?, ?, ?, ?, ?, ?)`, [
       username, password, 'customer', firstname, lastname, birthDate, gender 
     ]);
-    res.json({ message: 'Account created successfully' });
+    res.json({ success: true, message: 'Account created successfully' });
   } catch (err) {
     console.error('Register error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -556,6 +560,42 @@ app.get('/api/login', (req, res) => {
     message: 'Login requires POST method. Please use POST /api/login with username and password in the request body.',
     allowedMethods: ['POST']
   });
+});
+
+// Customer-specific login endpoint (matches frontend expectations)
+app.post('/api/customer/login', async (req, res) => {
+  if (!db) {
+    return res.status(503).json({ success: false, message: 'Database not initialized yet. Please try again in a moment.' });
+  }
+  const { username, password, role } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: 'Username and password are required' });
+  }
+  try {
+    const user = await db.get(`SELECT * FROM users WHERE username = ?`, [username]);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (user.password !== password)
+      return res.status(401).json({ success: false, message: 'Invalid password' });
+    
+    // Return format expected by frontend
+    res.json({ 
+      success: true, 
+      message: 'Login successful', 
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        gender: user.gender,
+        birthDate: user.birthDate,
+        isVerified: user.isVerified
+      }
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.post('/api/login', async (req, res) => {
