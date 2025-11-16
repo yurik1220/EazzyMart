@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/adminstyle.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    .user-management-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: var(--spacing-lg);
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-lg);
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+    }
+
+    .back-button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-md) var(--spacing-lg);
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      transition: all var(--transition-fast);
+    }
+
+    .back-button:hover {
+      background: var(--color-bg);
+      border-color: var(--color-text-muted);
+    }
+
+    .form-section {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--spacing-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .form-section-header {
+      padding: var(--spacing-lg) var(--spacing-xl);
+      border-bottom: 1px solid var(--color-border-light);
+      background: var(--color-bg);
+    }
+
+    .form-section-title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .form-section-body {
+      padding: var(--spacing-lg);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--spacing-md);
+    }
+
+    @media (max-width: 1200px) {
+      .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .form-group-full {
+      grid-column: 1 / -1;
+    }
+
+    .password-group {
+      position: relative;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: var(--spacing-md);
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      padding: var(--spacing-xs);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+    }
+
+    .password-toggle:hover {
+      color: var(--color-text-primary);
+      background: var(--color-bg);
+    }
+
+    .form-actions-bar {
+      display: flex;
+      gap: var(--spacing-md);
+      justify-content: flex-end;
+      margin-top: var(--spacing-lg);
+      padding-top: var(--spacing-lg);
+      border-top: 1px solid var(--color-border-light);
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: var(--spacing-xs);
+      background: var(--color-bg);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+    }
+
+    .filter-tab {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .filter-tab:hover {
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+    }
+
+    .filter-tab.active {
+      background: var(--color-primary);
+      color: var(--color-text-on-dark);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .filter-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+    }
+
+    .filter-tab.active .filter-count {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .table-section {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table-section-header {
+      padding: var(--spacing-lg) var(--spacing-xl);
+      border-bottom: 1px solid var(--color-border-light);
+      background: var(--color-bg);
+    }
+
+    .table-section-title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    .user-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .user-table thead {
+      background: var(--color-bg);
+    }
+
+    .user-table th {
+      padding: var(--spacing-md) var(--spacing-lg);
+      text-align: left;
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid var(--color-border);
+    }
+
+    .user-table td {
+      padding: var(--spacing-lg);
+      border-bottom: 1px solid var(--color-border-light);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+    }
+
+    .user-table tbody tr {
+      transition: background var(--transition-fast);
+    }
+
+    .user-table tbody tr:hover {
+      background: var(--color-bg);
+    }
+
+    .user-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .role-badge {
+      display: inline-block;
+      padding: var(--spacing-xs) var(--spacing-sm);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .role-badge.admin {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .role-badge.cashier {
+      background: var(--color-warning-light);
+      color: var(--color-warning);
+    }
+
+    .role-badge.customer {
+      background: var(--color-success-light);
+      color: var(--color-success);
+    }
+
+    .verified-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-xs) var(--spacing-sm);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      font-weight: 500;
+    }
+
+    .verified-badge.yes {
+      background: var(--color-success-light);
+      color: var(--color-success);
+    }
+
+    .verified-badge.no {
+      background: var(--color-danger-light);
+      color: var(--color-danger);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    .btn-sm {
+      padding: var(--spacing-xs) var(--spacing-md);
+      font-size: var(--font-size-xs);
+    }
+
+    @media (max-width: 991.98px) {
+      .user-management-container {
+        padding: var(--spacing-lg);
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-actions-bar {
+        flex-direction: column;
+      }
+
+      .form-actions-bar .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="user-management-container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">User Management</h1>
+        <p class="page-subtitle">Manage system users and permissions</p>
+      </div>
+      <a href="Admin.html" class="back-button">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Back to Dashboard
+      </a>
+    </div>
+
+    <!-- Add/Edit User Form -->
+    <div class="form-section">
+      <div class="form-section-header">
+        <h2 class="form-section-title">Add / Edit User</h2>
+      </div>
+      <div class="form-section-body">
+        <form id="userForm">
+          <input type="hidden" id="userId">
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="username" class="form-label">Username</label>
+              <input type="text" id="username" class="form-control" placeholder="Enter username" required>
+            </div>
+
+            <div class="form-group password-group">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" id="password" class="form-control" placeholder="Enter password" required>
+              <button class="password-toggle" type="button" id="togglePassword" aria-label="Toggle password visibility">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 3C5 3 2.73 5.11 1 8.5C2.73 11.89 5 14 9 14C13 14 15.27 11.89 17 8.5C15.27 5.11 13 3 9 3Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="9" cy="8.5" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="form-group">
+              <label for="role" class="form-label">Role</label>
+              <select id="role" class="form-select">
+                <option value="admin">Admin</option>
+                <option value="cashier">Cashier</option>
+                <option value="customer">Customer</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="firstname" class="form-label">First Name</label>
+              <input type="text" id="firstname" class="form-control" placeholder="Enter first name" required>
+            </div>
+
+            <div class="form-group">
+              <label for="lastname" class="form-label">Last Name</label>
+              <input type="text" id="lastname" class="form-control" placeholder="Enter last name" required>
+            </div>
+
+            <div class="form-group">
+              <label for="birthDate" class="form-label">Birth Date</label>
+              <input type="date" id="birthDate" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label for="gender" class="form-label">Gender</label>
+              <select id="gender" class="form-select">
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="isVerified" class="form-label">Verification Status</label>
+              <select id="isVerified" class="form-select">
+                <option value="0">Not Verified</option>
+                <option value="1">Verified</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions-bar">
+            <button type="button" id="resetBtn" class="btn btn-secondary">Clear</button>
+            <button type="submit" class="btn btn-primary">Save User</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="table-section">
+      <div class="table-section-header">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--spacing-md);">
+          <h2 class="table-section-title">User List</h2>
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all" id="filter-all">
+              <span>All</span>
+              <span class="filter-count" id="count-all">0</span>
+            </button>
+            <button class="filter-tab" data-filter="admin" id="filter-admin">
+              <span>Admin</span>
+              <span class="filter-count" id="count-admin">0</span>
+            </button>
+            <button class="filter-tab" data-filter="customer" id="filter-customer">
+              <span>Customer</span>
+              <span class="filter-count" id="count-customer">0</span>
+            </button>
+            <button class="filter-tab" data-filter="cashier" id="filter-cashier">
+              <span>Cashier</span>
+              <span class="filter-count" id="count-cashier">0</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="user-table" id="userTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Role</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Birth Date</th>
+              <th>Gender</th>
+              <th>Verified</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-state" id="empty-state" style="display: none; padding: var(--spacing-2xl); text-align: center; color: var(--color-text-muted);">
+          <p>No users found matching the selected filter.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api/user';
+    const userForm = document.getElementById('userForm');
+    const userTable = document.querySelector('#userTable tbody');
+    const resetBtn = document.getElementById('resetBtn');
+    const togglePassword = document.getElementById('togglePassword');
+    let allUsers = [];
+    let currentFilter = 'all';
+
+    // ============================
+    // AUTH CHECK (redirect if not logged in)
+    // ============================
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser || !currentUser.username || currentUser.role !== 'admin') {
+      alert('You must be logged in to access this page.');
+      window.location.href = 'login.html';
+    }
+
+    // ============================
+    // PASSWORD TOGGLE
+    // ============================
+    togglePassword.addEventListener('click', () => {
+      const pw = document.getElementById('password');
+      pw.type = pw.type === 'password' ? 'text' : 'password';
+    });
+
+    // ============================
+    // FETCH USERS
+    // ============================
+    async function fetchUsers() {
+      const res = await fetch(API_URL);
+      allUsers = await res.json();
+      updateFilterCounts();
+      filterUsers(currentFilter);
+    }
+
+    function updateFilterCounts() {
+      const counts = {
+        all: allUsers.length,
+        admin: allUsers.filter(u => u.role && u.role.toLowerCase() === 'admin').length,
+        customer: allUsers.filter(u => u.role && u.role.toLowerCase() === 'customer').length,
+        cashier: allUsers.filter(u => u.role && u.role.toLowerCase() === 'cashier').length
+      };
+
+      document.getElementById('count-all').textContent = counts.all;
+      document.getElementById('count-admin').textContent = counts.admin;
+      document.getElementById('count-customer').textContent = counts.customer;
+      document.getElementById('count-cashier').textContent = counts.cashier;
+    }
+
+    function filterUsers(filter) {
+      currentFilter = filter;
+      let filteredUsers = allUsers;
+
+      if (filter !== 'all') {
+        filteredUsers = allUsers.filter(u => 
+          u.role && u.role.toLowerCase() === filter.toLowerCase()
+        );
+      }
+
+      renderUsers(filteredUsers);
+    }
+
+    function renderUsers(users) {
+      userTable.innerHTML = '';
+      const emptyState = document.getElementById('empty-state');
+      
+      if (users.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${u.id}</td>
+          <td>${u.username}</td>
+          <td><span class="role-badge ${u.role ? u.role.toLowerCase() : ''}">${u.role || 'N/A'}</span></td>
+          <td>${u.firstname || ''}</td>
+          <td>${u.lastname || ''}</td>
+          <td>${u.birthDate ? new Date(u.birthDate).toISOString().split('T')[0] : ''}</td>
+          <td>${u.gender || ''}</td>
+          <td><span class="verified-badge ${u.isVerified ? 'yes' : 'no'}">${u.isVerified ? 'Yes' : 'No'}</span></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-sm btn-warning" onclick="editUser(${u.id})">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">Delete</button>
+            </div>
+          </td>
+        `;
+        userTable.appendChild(tr);
+      });
+    }
+
+    // ============================
+    // FILTER TABS
+    // ============================
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const filter = tab.dataset.filter;
+        filterUsers(filter);
+      });
+    });
+
+    // ============================
+    // SAVE USER
+    // ============================
+    userForm.addEventListener('submit', async e => {
+      e.preventDefault();
+
+      const id = document.getElementById('userId').value;
+      const userData = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        role: document.getElementById('role').value,
+        firstname: document.getElementById('firstname').value,
+        lastname: document.getElementById('lastname').value,
+        birthDate: document.getElementById('birthDate').value,
+        gender: document.getElementById('gender').value,
+        isVerified: parseInt(document.getElementById('isVerified').value)
+      };
+
+      try {
+        let response;
+        if (id) {
+          response = await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+          });
+        } else {
+          response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+          });
+        }
+
+        if (!response.ok) {
+          const err = await response.json();
+          alert('Error: ' + (err.message || err.error));
+        } else {
+          const res = await response.json(); 
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: res.message || 'User saved successfully',
+            timer: 2000,
+            showConfirmButton: false
+          });
+
+          await fetchUsers();
+          
+          userForm.reset();
+          document.getElementById('userId').value = '';
+          document.getElementById('username').disabled = false;
+        }
+      } catch (error) {
+        console.error(error);
+        alert('Failed to save user.');
+      }
+    });
+
+    // ============================
+    // DELETE USER
+    // ============================
+    async function deleteUser(id) {
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: 'This action cannot be undone!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, delete it!'
+      });
+
+      if (result.isConfirmed) {
+        const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: 'User has been deleted.',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          await fetchUsers();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to delete user.'
+          });
+        }
+      }
+    }
+
+    // ============================
+    // EDIT USER
+    // ============================
+    async function editUser(id) {
+      const res = await fetch(API_URL);
+      const users = await res.json();
+      const u = users.find(x => x.id === id);
+      if (!u) return alert('User not found');
+
+      document.getElementById('userId').value = u.id;
+      document.getElementById('username').value = u.username;
+      document.getElementById('password').value = u.password;
+      document.getElementById('role').value = u.role;
+      document.getElementById('firstname').value = u.firstname || '';
+      document.getElementById('lastname').value = u.lastname || '';
+      document.getElementById('birthDate').value = u.birthDate ? new Date(u.birthDate).toISOString().split('T')[0] : '';
+      document.getElementById('gender').value = u.gender || '';
+      document.getElementById('isVerified').value = u.isVerified ? '1' : '0';
+
+      document.getElementById('username').disabled = true;
+    }
+
+    resetBtn.addEventListener('click', () => {
+      userForm.reset();
+      document.getElementById('userId').value = '';
+      document.getElementById('username').disabled = false;
+    });
+
+    fetchUsers();
+  </script>
+</body>
+</html>

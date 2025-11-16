@@ -1,0 +1,23 @@
+{
+  "dependencies": {
+    "bootstrap": "^5.3.8",
+    "chart.js": "^4.5.1",
+    "firebase": "^12.6.0",
+    "sweetalert": "^2.1.2",
+    "sweetalert2": "^11.26.3"
+  },
+  "name": "capstone",
+  "version": "1.0.0",
+  "main": "adminscript-copy.js",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "scripts": {
+    "start": "live-server --port=8000 --open=frontend/pages/Index.html --watch=frontend",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

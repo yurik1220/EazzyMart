@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Report — Eazzy Mart</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/adminstyle.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    .sales-report-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: var(--spacing-xl);
+      background: var(--color-bg);
+      min-height: 100vh;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-xl);
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+    }
+
+    .back-button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-md) var(--spacing-lg);
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      transition: all var(--transition-fast);
+    }
+
+    .back-button:hover {
+      background: var(--color-bg);
+      border-color: var(--color-text-muted);
+    }
+
+    /* Date Filter Section */
+    .filter-section {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .filter-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-md);
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+    }
+
+    .filter-title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+
+    .quick-filters {
+      display: flex;
+      gap: var(--spacing-sm);
+      flex-wrap: wrap;
+    }
+
+    .quick-filter-btn {
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      color: var(--color-text-primary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .quick-filter-btn:hover {
+      background: var(--color-primary-light);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .quick-filter-btn.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: var(--color-text-on-dark);
+    }
+
+    .custom-date-filter {
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: var(--spacing-md);
+      padding-top: var(--spacing-md);
+      border-top: 1px solid var(--color-border-light);
+    }
+
+    .date-input-group {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .date-input-group label {
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      white-space: nowrap;
+    }
+
+    .date-input-group input {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+    }
+
+    .date-input-group input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-light);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: center;
+    }
+
+    .btn-export {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: var(--color-secondary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .btn-export:hover {
+      background: var(--color-secondary-dark);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Report Header */
+    .report-header {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-xl);
+      margin-bottom: var(--spacing-xl);
+      text-align: center;
+    }
+
+    .report-header-logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto var(--spacing-md);
+      background: white;
+      padding: 8px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .report-header-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .report-header h1 {
+      font-size: var(--font-size-2xl);
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin: 0 0 var(--spacing-xs) 0;
+    }
+
+    .report-header h2 {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      margin: 0 0 var(--spacing-lg) 0;
+    }
+
+    .report-header-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--spacing-md);
+      text-align: left;
+      margin-top: var(--spacing-lg);
+      padding-top: var(--spacing-lg);
+      border-top: 1px solid var(--color-border-light);
+    }
+
+    .report-header-info-item {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .report-header-info-item strong {
+      color: var(--color-text-primary);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* Summary Cards */
+    .summary-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .summary-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .summary-card-title {
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      margin: 0 0 var(--spacing-sm) 0;
+    }
+
+    .summary-card-value {
+      font-size: var(--font-size-2xl);
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+
+    .summary-card-value.currency {
+      color: var(--color-success);
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--spacing-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-header {
+      padding: var(--spacing-lg) var(--spacing-xl);
+      border-bottom: 1px solid var(--color-border-light);
+      background: var(--color-bg);
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .section-body {
+      padding: var(--spacing-lg);
+    }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .report-table thead {
+      background: var(--color-bg);
+    }
+
+    .report-table th {
+      padding: var(--spacing-md) var(--spacing-lg);
+      text-align: left;
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid var(--color-border);
+    }
+
+    .report-table td {
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--color-border-light);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+    }
+
+    .report-table tbody tr:hover {
+      background: var(--color-bg);
+    }
+
+    .report-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Category Grid */
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--spacing-md);
+    }
+
+    .category-item {
+      padding: var(--spacing-md);
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border-light);
+    }
+
+    .category-item-name {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .category-item-stats {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-block;
+      padding: var(--spacing-xs) var(--spacing-sm);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .status-badge.completed,
+    .status-badge.delivered {
+      background: var(--color-success-light);
+      color: var(--color-success);
+    }
+
+    .status-badge.refunded {
+      background: var(--color-danger-light);
+      color: var(--color-danger);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: var(--spacing-xl);
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+    }
+
+    @media (max-width: 991.98px) {
+      .sales-report-container {
+        padding: var(--spacing-lg);
+      }
+
+      .summary-section {
+        grid-template-columns: 1fr;
+      }
+
+      .category-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .custom-date-filter {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .date-input-group {
+        width: 100%;
+      }
+
+      .date-input-group input {
+        flex: 1;
+      }
+    }
+
+    /* Print Styles */
+    @media print {
+      .filter-section,
+      .action-buttons,
+      .back-button {
+        display: none;
+      }
+
+      .sales-report-container {
+        padding: 0;
+      }
+
+      .section-card {
+        page-break-inside: avoid;
+        margin-bottom: var(--spacing-lg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sales-report-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Sales Report</h1>
+        <p class="page-subtitle">Comprehensive sales analysis and insights</p>
+      </div>
+      <a href="Admin.html" class="back-button">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Back to Dashboard
+      </a>
+    </div>
+
+    <!-- Date Filter Section -->
+    <div class="filter-section">
+      <div class="filter-header">
+        <h3 class="filter-title">Date Filter</h3>
+        <div class="action-buttons">
+          <button class="btn-export" id="exportPdfBtn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 10V13.3333C14 13.6869 13.8595 14.0261 13.6095 14.2761C13.3594 14.5262 13.0203 14.6667 12.6667 14.6667H3.33333C2.97971 14.6667 2.64057 14.5262 2.39052 14.2761C2.14048 14.0261 2 13.6869 2 13.3333V10M11.3333 5.33333L8 2M8 2L4.66667 5.33333M8 2V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Export PDF
+          </button>
+        </div>
+      </div>
+      <div class="quick-filters">
+        <button class="quick-filter-btn active" data-filter="today">Today</button>
+        <button class="quick-filter-btn" data-filter="weekly">Weekly</button>
+        <button class="quick-filter-btn" data-filter="monthly">Monthly</button>
+        <button class="quick-filter-btn" data-filter="annually">Annually</button>
+        <button class="quick-filter-btn" data-filter="all">All Time</button>
+      </div>
+      <div class="custom-date-filter">
+        <div class="date-input-group">
+          <label for="dateFrom">From:</label>
+          <input type="date" id="dateFrom" class="date-input">
+        </div>
+        <div class="date-input-group">
+          <label for="dateTo">To:</label>
+          <input type="date" id="dateTo" class="date-input">
+        </div>
+        <button class="quick-filter-btn" id="applyCustomDate">Apply Custom Range</button>
+      </div>
+    </div>
+
+    <!-- Report Header -->
+    <div class="report-header" id="reportHeader">
+      <div class="report-header-logo">
+        <img src="../assets/images/eazzymartlogo.png" alt="Eazzy Mart Logo">
+      </div>
+      <h1>Eazzy Mart</h1>
+      <h2 id="reportTitle">Sales Report</h2>
+      <div class="report-header-info">
+        <div class="report-header-info-item">
+          <strong>Coverage Date:</strong>
+          <span id="coverageDate">-</span>
+        </div>
+        <div class="report-header-info-item">
+          <strong>Generated By:</strong>
+          <span id="generatedBy">-</span>
+        </div>
+        <div class="report-header-info-item">
+          <strong>Date/Time Generated:</strong>
+          <span id="generatedDate">-</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sales Summary -->
+    <div class="summary-section" id="salesSummary">
+      <div class="summary-card">
+        <h3 class="summary-card-title">Total Sales Amount</h3>
+        <p class="summary-card-value currency" id="totalSalesAmount">₱0.00</p>
+      </div>
+      <div class="summary-card">
+        <h3 class="summary-card-title">Total Orders</h3>
+        <p class="summary-card-value" id="totalOrders">0</p>
+      </div>
+      <div class="summary-card">
+        <h3 class="summary-card-title">Total Items Sold</h3>
+        <p class="summary-card-value" id="totalItemsSold">0</p>
+      </div>
+      <div class="summary-card">
+        <h3 class="summary-card-title">Average Order Value</h3>
+        <p class="summary-card-value currency" id="averageOrderValue">₱0.00</p>
+      </div>
+      <div class="summary-card">
+        <h3 class="summary-card-title">Total Discounts</h3>
+        <p class="summary-card-value currency" id="totalDiscounts">₱0.00</p>
+      </div>
+      <div class="summary-card">
+        <h3 class="summary-card-title">Total Refunds</h3>
+        <p class="summary-card-value currency" id="totalRefunds">₱0.00</p>
+      </div>
+      <div class="summary-card">
+        <h3 class="summary-card-title">Net Sales</h3>
+        <p class="summary-card-value currency" id="netSales">₱0.00</p>
+      </div>
+    </div>
+
+    <!-- Payment Breakdown -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3 class="section-title">Payment Breakdown</h3>
+      </div>
+      <div class="section-body">
+        <div class="category-grid" id="paymentBreakdown">
+          <!-- Payment items will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Sales by Category -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3 class="section-title">Sales by Category</h3>
+      </div>
+      <div class="section-body">
+        <div class="category-grid" id="salesByCategory">
+          <!-- Category items will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Sales by Product -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3 class="section-title">Sales by Product</h3>
+      </div>
+      <div class="section-body">
+        <div class="table-wrapper">
+          <table class="report-table" id="salesByProductTable">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>Qty Sold</th>
+                <th>Price</th>
+                <th>Total Sales</th>
+                <th>Discount</th>
+              </tr>
+            </thead>
+            <tbody id="salesByProductBody">
+              <!-- Product rows will be inserted here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order List -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3 class="section-title">Order List</h3>
+      </div>
+      <div class="section-body">
+        <div class="table-wrapper">
+          <table class="report-table" id="orderListTable">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Date/Time</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Payment Method</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="orderListBody">
+              <!-- Order rows will be inserted here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Refunds / Returns Summary -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3 class="section-title">Refunds / Returns Summary</h3>
+      </div>
+      <div class="section-body">
+        <div id="refundsSummary">
+          <!-- Refunds summary will be inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/sales-report.js"></script>
+</body>
+</html>

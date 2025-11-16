@@ -1,0 +1,155 @@
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nino's Grocery Store — Shop Fresh Daily</title>
+    <!-- Bootstrap CSS -->
+    <link href="node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="webstyle.css">
+    
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="bg-light py-3 mb-4 shadow-sm">
+      <div class="container d-flex flex-wrap justify-content-between align-items-center">
+        <a href="#browse" class="navbar-brand fs-4">🛒 Nino's Grocery Store</a>
+        <form class="d-flex mb-2 mb-lg-0">
+          <input class="form-control me-2" type="search" placeholder="Search for items..." aria-label="Search">
+          <button class="btn btn-outline-success" type="submit">🔍</button>
+        </form>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success" id="open-cart">🛍️ Cart (<span id="cart-count">0</span>)</button>
+          <button class="btn btn-primary" id="open-checkout">💳 Checkout</button>
+          <button type="button" class="btn btn-danger" id="logout-btn">🚪 Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Promo Banner -->
+  <section class="promo-banner">
+    <div class="banner-content">
+      <img src="images/flash-deals.png" alt="Flash Sale" class="promo-img mb-3">
+      <h2>⚡ Flash Deals!</h2>
+      <p>Grab up to <strong>50% OFF</strong> — limited time only!</p>
+      <a href="#shop" class="pulse-btn">Shop Now</a>
+    </div>
+  </section>
+    <!-- Categories -->
+    <section class="container mb-5">
+      <h2 class="mb-4">Categories</h2>
+      <div class="row g-3">
+        <div class="col-6 col-md-3"><a href="#fresh-produce" class="category-item">🍎 Fresh Produce</a></div>
+        <div class="col-6 col-md-3"><a href="#meat-poultry" class="category-item">🥩 Meat & Poultry</a></div>
+        <div class="col-6 col-md-3"><a href="#bakery" class="category-item">🍞 Bakery</a></div>
+        <div class="col-6 col-md-3"><a href="#dairy" class="category-item">🥛 Dairy</a></div>
+        <div class="col-6 col-md-3"><a href="#snacks" class="category-item">🍫 Snacks</a></div>
+        <div class="col-6 col-md-3"><a href="#personal-care" class="category-item">🧴 Personal Care</a></div>
+        <div class="col-6 col-md-3"><a href="#household" class="category-item">🧹 Household</a></div>
+        <div class="col-6 col-md-3"><a href="#kitchen-essentials" class="category-item">🍽️ Kitchen Essentials</a></div>
+      </div>
+    </section>
+
+    <!-- Products -->
+    <div class="container mt-4">
+      <section id="browse" class="mb-5">
+        <h2>Recently Added Items</h2>
+        <div id="product-list" class="grid text-center row g-3"></div>
+      </section>
+
+      <!-- Cart -->
+      <section id="cart-section" class="d-none">
+        <h2>Your Shopping Cart</h2>
+        <div id="cart-items" class="mb-3">
+          <p>No items in the cart.</p>
+        </div>
+        <h3>Total: ₱<span id="total-price">0.00</span></h3>
+        <div class="cart-btns">
+          <button id="checkout-button" class="btn btn-primary">Proceed to Checkout</button>
+          <button id="back-to-shop" class="btn btn-secondary">⬅️ Back to Shop</button>
+        </div>
+      </section>
+
+      <!-- Checkout -->
+  <section id="checkout-section" class="d-none">
+    <h2>Checkout</h2>
+    <form id="checkout-form" class="mb-3">
+
+      <!-- Order Type -->
+      <div class="mb-3">
+        <label for="orderType" class="form-label">Order Type:</label>
+        <select id="orderType" name="orderType" class="form-select" required>
+          <option value="" disabled selected>Select Order Type</option>
+          <option value="Delivery">Delivery</option>
+          <option value="Pickup">Pickup</option>
+        </select>
+      </div>
+
+      <!-- Customer Name -->
+      <div class="mb-3">
+        <label for="name" class="form-label">Name:</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+      </div>
+
+      <!-- Delivery Address (hidden when Pickup is selected) -->
+      <div class="mb-3" id="address-group">
+        <label for="address" class="form-label">Delivery Address:</label>
+        <input type="text" class="form-control" id="address" name="address" required>
+      </div>
+
+      <!-- Payment Method -->
+      <div class="mb-3">
+        <label for="payment" class="form-label">Payment Method:</label>
+        <select id="payment" name="payment" class="form-select" required>
+          <option value="" disabled selected>Select Payment Method</option>
+          <option value="Cash On Delivery">Cash On Delivery</option>
+          <option value="GCash">GCash</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-success">Complete Order</button>
+    </form>
+
+    <button id="back-to-cart" class="btn btn-secondary">⬅️ Back to Cart</button>
+  </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+      <p>&copy; 2025 Nino's Grocery Store. All rights reserved.</p>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="webscriptcustomer.js"></script>
+
+    <script>
+      const cartSection = document.getElementById('cart-section');
+      const checkoutSection = document.getElementById('checkout-section');
+      const browseSection = document.getElementById('browse');
+
+      const openCart = () => {
+        browseSection.classList.add('d-none');
+        checkoutSection.classList.add('d-none');
+        cartSection.classList.remove('d-none');
+      };
+      const openCheckout = () => {
+        browseSection.classList.add('d-none');
+        cartSection.classList.add('d-none');
+        checkoutSection.classList.remove('d-none');
+      };
+      const backToShop = () => {
+        cartSection.classList.add('d-none');
+        checkoutSection.classList.add('d-none');
+        browseSection.classList.remove('d-none');
+      };
+
+      document.getElementById("open-cart").addEventListener("click", openCart);
+      document.getElementById("open-checkout").addEventListener("click", openCheckout);
+      document.getElementById("checkout-button").addEventListener("click", openCheckout);
+      document.getElementById("back-to-shop").addEventListener("click", backToShop);
+      document.getElementById("back-to-cart").addEventListener("click", openCart);
+    </script>
+  </body>
+  </html>

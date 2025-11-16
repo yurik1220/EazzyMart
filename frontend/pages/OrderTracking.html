@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Orders — Eazzy Mart</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom CSS - Load after Bootstrap to override -->
+  <link rel="stylesheet" href="../css/webstyle.css">
+  <link rel="stylesheet" href="../css/order-tracking.css">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Header (Shopee Style) -->
+  <header>
+    <div class="header-container">
+      <a href="Index.html" class="logo">
+        <img src="../assets/images/eazzymartlogo.png" alt="Eazzy Mart Logo">
+        <span>Eazzy Mart</span>
+      </a>
+      
+      <div class="search-container">
+        <form class="search-form">
+          <input type="search" class="search-input" placeholder="Search for products..." aria-label="Search">
+          <button type="submit" class="search-btn">
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
+      </div>
+
+      <div class="header-actions">
+        <a href="Cart.html" class="cart-btn">
+          <i class="fas fa-shopping-cart"></i>
+          <span>Cart</span>
+          <span class="cart-badge" id="cart-count">0</span>
+        </a>
+        <a href="OrderTracking.html" class="checkout-btn" style="text-decoration: none;">
+          <i class="fas fa-box-open"></i>
+          <span>Orders</span>
+        </a>
+        <button type="button" class="logout-btn" id="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- My Orders Page Content -->
+  <div class="my-orders-container">
+    <!-- Page Header -->
+    <div class="orders-header">
+      <h1 class="orders-title">
+        <i class="fas fa-shopping-bag"></i> My Orders
+      </h1>
+    </div>
+
+    <!-- Tabs Section -->
+    <div class="orders-tabs">
+      <button class="tab-btn active" data-tab="ongoing">
+        <span>Ongoing</span>
+        <span class="tab-count" id="ongoing-count">0</span>
+      </button>
+      <button class="tab-btn" data-tab="completed">
+        <span>Completed</span>
+        <span class="tab-count" id="completed-count">0</span>
+      </button>
+      <button class="tab-btn" data-tab="return-refund">
+        <span>Return/Refund</span>
+        <span class="tab-count" id="return-refund-count">0</span>
+      </button>
+    </div>
+
+    <!-- Orders Content -->
+    <div class="orders-content">
+      <!-- Ongoing Orders -->
+      <div id="ongoing-orders" class="orders-list active">
+        <div id="ongoing-orders-list" class="orders-list-container">
+          <!-- Orders will be dynamically inserted here -->
+        </div>
+        <div id="ongoing-empty" class="empty-state" style="display: none;">
+          <i class="fas fa-box-open"></i>
+          <p>No ongoing orders</p>
+        </div>
+      </div>
+
+      <!-- Completed Orders -->
+      <div id="completed-orders" class="orders-list">
+        <div id="completed-orders-list" class="orders-list-container">
+          <!-- Orders will be dynamically inserted here -->
+        </div>
+        <div id="completed-empty" class="empty-state" style="display: none;">
+          <i class="fas fa-check-circle"></i>
+          <p>No completed orders</p>
+        </div>
+      </div>
+
+      <!-- Return/Refund Orders -->
+      <div id="return-refund-orders" class="orders-list">
+        <div id="return-refund-orders-list" class="orders-list-container">
+          <!-- Return/Refund requests will be dynamically inserted here -->
+        </div>
+        <div id="return-refund-empty" class="empty-state" style="display: none;">
+          <i class="fas fa-undo"></i>
+          <p>No return/refund requests</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Return/Refund Modal -->
+  <div class="modal fade" id="returnRefundModal" tabindex="-1" aria-labelledby="returnRefundModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="returnRefundModalLabel">Return/Refund Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="returnRefundForm">
+          <div class="modal-body">
+            <input type="hidden" id="return-refund-order-id" name="order_id">
+            <div class="mb-3">
+              <label for="return-refund-reason" class="form-label">Reason <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="return-refund-reason" name="reason" rows="4" placeholder="Please provide a reason for your return/refund request..." required></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="return-refund-image" class="form-label">Image (Optional)</label>
+              <input type="file" class="form-control" id="return-refund-image" name="image" accept="image/*">
+              <small class="form-text text-muted">Upload an image to support your request (e.g., damaged item, wrong item)</small>
+            </div>
+            <div class="mb-3">
+              <label for="return-refund-type" class="form-label">Request Type</label>
+              <select class="form-select" id="return-refund-type" name="request_type">
+                <option value="Return">Return</option>
+                <option value="Refund">Refund</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Submit Request</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2025 Eazzy Mart. All rights reserved.</p>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="../js/order-tracking.js"></script>
+</body>
+</html>

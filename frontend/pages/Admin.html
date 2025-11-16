@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Grocery Store</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.18/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  
+  <!-- Custom Admin Styles -->
+  <link rel="stylesheet" href="../css/adminstyle.css">
+</head>
+<body>
+  <!-- Overlay for mobile -->
+  <div class="overlay" id="overlay"></div>
+
+  <div class="container-fluid admin-container">
+    <div class="row flex-nowrap">
+      <!-- SIDEBAR -->
+      <aside class="admin-sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-brand">
+            <div class="brand-icon-square">
+              <img src="../assets/images/eazzymartlogo.png" alt="EazzyMart Logo" class="brand-logo">
+            </div>
+            <div class="brand-text">
+              <div class="brand-title">Eazzy Mart</div>
+            </div>
+          </div>
+          <button class="sidebar-close d-md-none" id="close-sidebar" aria-label="Close sidebar">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <nav class="sidebar-nav">
+          <ul class="nav-list">
+            <li>
+              <a href="#" class="nav-link active" data-section="dashboard">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="2" width="6" height="6" rx="1" fill="currentColor"/>
+                  <rect x="2" y="12" width="6" height="6" rx="1" fill="currentColor"/>
+                  <rect x="12" y="2" width="6" height="6" rx="1" fill="currentColor"/>
+                  <rect x="12" y="12" width="6" height="6" rx="1" fill="currentColor"/>
+                </svg>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-link" data-section="add-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>Add Item</span>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-link" data-section="view-items">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 4H17M3 8H17M3 12H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>Products</span>
+              </a>
+            </li>
+            <li>
+              <a href="Cashier.html" class="nav-link">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 4H4L6 14H16L18 6H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="7" cy="17" r="1.5" fill="currentColor"/>
+                  <circle cx="15" cy="17" r="1.5" fill="currentColor"/>
+                </svg>
+                <span>Orders</span>
+              </a>
+            </li>
+            <li>
+              <a href="user-management.html" class="nav-link">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 10C12.7614 10 15 7.76142 15 5C15 2.23858 12.7614 0 10 0C7.23858 0 5 2.23858 5 5C5 7.76142 7.23858 10 10 10Z" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M0 20C0 15.5817 4.47715 12 10 12C15.5228 12 20 15.5817 20 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>Customers</span>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-link" data-section="report">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 17V7M7 17V3M11 17V11M15 17V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Reports</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="nav-divider"></div>
+
+          <ul class="nav-list">
+            <li>
+              <a href="#" class="nav-link">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 2L12.09 7.26L18 8L13 12L14.18 18L10 15L5.82 18L7 12L2 8L7.91 7.26L10 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Settings</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-user-profile">
+            <div class="sidebar-user-avatar">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M6 21C6 17.6863 8.68629 15 12 15C15.3137 15 18 17.6863 18 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="sidebar-user-info">
+              <div class="sidebar-user-name" id="sidebar-user-name">Admin</div>
+              <div class="sidebar-user-role">Admin</div>
+            </div>
+          </div>
+          <button id="logout-btn" class="logout-button">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 16H3C2.44772 16 2 15.5523 2 15V3C2 2.44772 2.44772 2 3 2H7M12 13L16 9M16 9L12 5M16 9H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main class="admin-main">
+        <button class="mobile-menu-btn d-md-none" id="toggle-sidebar" aria-label="Toggle menu" style="position: fixed; top: 1rem; left: 1rem; z-index: 1001; background: var(--color-surface); border: 1px solid var(--color-border); padding: 0.5rem; border-radius: 0.5rem;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <div class="main-content">
+          <!-- DASHBOARD -->
+          <section id="dashboard" class="admin-section">
+            <h1 class="page-title">Dashboard</h1>
+            
+            <!-- Top Stats Row -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-icon stat-icon-primary">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Total Sales</div>
+                  <div class="stat-value" id="total-sales">₱0.00</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon stat-icon-success">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V19C17 19.5523 16.5523 20 16 20H8C7.44772 20 7 19.5523 7 19V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Total Orders</div>
+                  <div class="stat-value" id="total-orders">0</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon stat-icon-warning">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Total Customers</div>
+                  <div class="stat-value" id="total-customers">0</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon stat-icon-primary">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 21V13C16 11.8954 15.1046 11 14 11H10C8.89543 11 8 11.8954 8 13V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 9L12 15L22 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Total Products</div>
+                  <div class="stat-value" id="total-products">0</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="dashboard-row">
+              <div class="chart-card">
+                <div class="card-header">
+                  <h3 class="card-title">Sales Analysis</h3>
+                  <div class="chart-controls">
+                    <button class="chart-period-btn active" data-period="daily">Daily</button>
+                    <button class="chart-period-btn" data-period="weekly">Weekly</button>
+                    <button class="chart-period-btn" data-period="monthly">Monthly</button>
+                  </div>
+                </div>
+                <div class="card-body chart-container">
+                  <canvas id="salesChart"></canvas>
+                </div>
+              </div>
+
+              <div class="chart-card">
+                <div class="card-header">
+                  <h3 class="card-title">Category Distribution</h3>
+                </div>
+                <div class="card-body chart-container">
+                  <canvas id="categoryChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Row - Lists and Alerts -->
+            <div class="dashboard-row">
+              <div class="list-card">
+                <div class="card-header">
+                  <h3 class="card-title">Top Selling Products</h3>
+                  <a href="#" class="card-link" data-section="view-items">View All</a>
+                </div>
+                <div class="card-body">
+                  <div id="top-products-list" class="products-list">
+                    <div class="empty-state">Loading...</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="list-card">
+                <div class="card-header">
+                  <h3 class="card-title">Low Stock Alerts</h3>
+                  <span class="alert-badge" id="low-stock-count">0</span>
+                </div>
+                <div class="card-body">
+                  <div id="low-stock-list" class="alerts-list">
+                    <div class="empty-state">No low stock items</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Orders and Pending Actions -->
+            <div class="dashboard-row">
+              <div class="list-card">
+                <div class="card-header">
+                  <h3 class="card-title">Recent Orders</h3>
+                  <a href="Cashier.html" class="card-link">View All</a>
+                </div>
+                <div class="card-body">
+                  <div id="recent-orders-list" class="orders-list">
+                    <div class="empty-state">Loading...</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="list-card">
+                <div class="card-header">
+                  <h3 class="card-title">Pending Actions</h3>
+                  <span class="alert-badge" id="pending-actions-count">0</span>
+                </div>
+                <div class="card-body">
+                  <div id="pending-actions-list" class="actions-list">
+                    <div class="empty-state">No pending actions</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ADD ITEM -->
+          <section id="add-item" class="admin-section d-none">
+            <div class="section-header">
+              <h1 class="page-title">Add Item</h1>
+              <p class="page-subtitle">Add a new product to your inventory</p>
+            </div>
+
+            <div class="form-card">
+              <form id="add-item-form">
+                <div class="form-group">
+                  <label for="item-name" class="form-label">Item Name</label>
+                  <input type="text" id="item-name" class="form-control" placeholder="Enter item name" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="item-category" class="form-label">Category</label>
+                  <select id="item-category" class="form-select" required>
+                    <option value="">Select Category</option>
+                    <option>Fresh Produce</option>
+                    <option>Dairy</option>
+                    <option>Snacks</option>
+                    <option>Beverages</option>
+                    <option>Frozen Foods</option>
+                    <option>Canned Goods</option>
+                    <option>Household Items</option>
+                    <option>Personal Care</option>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="item-price" class="form-label">Price (₱)</label>
+                    <input type="number" id="item-price" class="form-control" step="0.01" min="0" placeholder="0.00" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="item-stock" class="form-label">Stock Quantity</label>
+                    <input type="number" id="item-stock" class="form-control" min="0" placeholder="0" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="item-image-file" class="form-label">Upload Image</label>
+                  <div class="file-upload-wrapper">
+                    <input type="file" id="item-image-file" class="file-input" accept="image/*">
+                    <label for="item-image-file" class="file-label">
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 2V18M2 10H18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                      <span class="file-label-text">Choose File</span>
+                      <span class="file-name" id="file-name">No file chosen</span>
+                    </label>
+                  </div>
+                  <div class="image-preview-container" id="image-preview-container" style="display: none;">
+                    <img id="image-preview" class="image-preview" alt="Preview">
+                    <button type="button" class="image-preview-remove" id="remove-image-preview" aria-label="Remove image">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <small class="form-hint">Recommended: Square image, max 2MB</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="item-description" class="form-label">Description</label>
+                  <textarea id="item-description" class="form-control" rows="3" placeholder="Enter item description" required></textarea>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <!-- VIEW ITEMS -->
+          <section id="view-items" class="admin-section d-none">
+            <div class="section-header">
+              <h1 class="page-title">View Items</h1>
+              <p class="page-subtitle">Manage your product inventory</p>
+            </div>
+
+            <div class="view-items-search">
+              <div class="search-wrapper">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M19 19L14.65 14.65" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <input type="text" id="search-bar" class="search-input" placeholder="Search items by name, category, or description...">
+              </div>
+            </div>
+
+            <div id="product-list" class="admin-products-grid"></div>
+          </section>
+
+          <!-- REPORT -->
+          <section id="report" class="admin-section d-none">
+            <div class="section-header">
+              <div>
+                <h1 class="page-title">Sales Report</h1>
+                <p class="page-subtitle">Comprehensive sales analysis and insights</p>
+              </div>
+              <button class="btn-export" id="exportPdfBtn">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 10V13.3333C14 13.6869 13.8595 14.0261 13.6095 14.2761C13.3594 14.5262 13.0203 14.6667 12.6667 14.6667H3.33333C2.97971 14.6667 2.64057 14.5262 2.39052 14.2761C2.14048 14.0261 2 13.6869 2 13.3333V10M11.3333 5.33333L8 2M8 2L4.66667 5.33333M8 2V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Export PDF
+              </button>
+            </div>
+
+            <!-- Date Filter Section -->
+            <div class="report-filter-card">
+              <div class="report-filter-header">
+                <h3 class="report-filter-title">Date Filter</h3>
+                <div class="report-filter-info">
+                  <span class="report-filter-label">Coverage:</span>
+                  <span id="coverageDate" class="report-filter-value">-</span>
+                </div>
+              </div>
+              <div class="quick-filters">
+                <button class="quick-filter-btn active" data-filter="today">Today</button>
+                <button class="quick-filter-btn" data-filter="weekly">Weekly</button>
+                <button class="quick-filter-btn" data-filter="monthly">Monthly</button>
+                <button class="quick-filter-btn" data-filter="annually">Annually</button>
+                <button class="quick-filter-btn" data-filter="all">All Time</button>
+              </div>
+              <div class="custom-date-filter">
+                <div class="date-input-group">
+                  <label for="dateFrom">From:</label>
+                  <input type="date" id="dateFrom" class="date-input">
+                </div>
+                <div class="date-input-group">
+                  <label for="dateTo">To:</label>
+                  <input type="date" id="dateTo" class="date-input">
+                </div>
+                <button class="quick-filter-btn" id="applyCustomDate">Apply Custom Range</button>
+              </div>
+            </div>
+
+            <!-- Sales Summary -->
+            <div class="report-summary-grid" id="salesSummary">
+              <div class="report-summary-card">
+                <h3 class="report-summary-title">Total Sales Amount</h3>
+                <p class="report-summary-value report-currency" id="totalSalesAmount">₱0.00</p>
+              </div>
+              <div class="report-summary-card">
+                <h3 class="report-summary-title">Total Orders</h3>
+                <p class="report-summary-value" id="totalOrders">0</p>
+              </div>
+              <div class="report-summary-card">
+                <h3 class="report-summary-title">Total Items Sold</h3>
+                <p class="report-summary-value" id="totalItemsSold">0</p>
+              </div>
+              <div class="report-summary-card">
+                <h3 class="report-summary-title">Average Order Value</h3>
+                <p class="report-summary-value report-currency" id="averageOrderValue">₱0.00</p>
+              </div>
+              <div class="report-summary-card">
+                <h3 class="report-summary-title">Total Discounts</h3>
+                <p class="report-summary-value report-currency" id="totalDiscounts">₱0.00</p>
+              </div>
+              <div class="report-summary-card">
+                <h3 class="report-summary-title">Total Refunds</h3>
+                <p class="report-summary-value report-currency" id="totalRefunds">₱0.00</p>
+              </div>
+              <div class="report-summary-card">
+                <h3 class="report-summary-title">Net Sales</h3>
+                <p class="report-summary-value report-currency" id="netSales">₱0.00</p>
+              </div>
+            </div>
+
+            <!-- Payment Breakdown -->
+            <div class="report-section-card">
+              <div class="report-section-header">
+                <h3 class="report-section-title">Payment Breakdown</h3>
+              </div>
+              <div class="report-section-body">
+                <div class="report-grid" id="paymentBreakdown">
+                  <!-- Payment items will be inserted here -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Sales by Category -->
+            <div class="report-section-card">
+              <div class="report-section-header">
+                <h3 class="report-section-title">Sales by Category</h3>
+              </div>
+              <div class="report-section-body">
+                <div class="report-grid" id="salesByCategory">
+                  <!-- Category items will be inserted here -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Sales by Product -->
+            <div class="report-section-card">
+              <div class="report-section-header">
+                <h3 class="report-section-title">Sales by Product</h3>
+              </div>
+              <div class="report-section-body">
+                <div class="report-table-wrapper">
+                  <table class="report-table" id="salesByProductTable">
+                    <thead>
+                      <tr>
+                        <th>Product Name</th>
+                        <th>Qty Sold</th>
+                        <th>Price</th>
+                        <th>Total Sales</th>
+                        <th>Discount</th>
+                      </tr>
+                    </thead>
+                    <tbody id="salesByProductBody">
+                      <!-- Product rows will be inserted here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Order List -->
+            <div class="report-section-card">
+              <div class="report-section-header">
+                <h3 class="report-section-title">Order List</h3>
+              </div>
+              <div class="report-section-body">
+                <div class="report-table-wrapper">
+                  <table class="report-table" id="orderListTable">
+                    <thead>
+                      <tr>
+                        <th>Order ID</th>
+                        <th>Date/Time</th>
+                        <th>Customer</th>
+                        <th>Total</th>
+                        <th>Payment Method</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="orderListBody">
+                      <!-- Order rows will be inserted here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Refunds / Returns Summary -->
+            <div class="report-section-card">
+              <div class="report-section-header">
+                <h3 class="report-section-title">Refunds / Returns Summary</h3>
+              </div>
+              <div class="report-section-body">
+                <div id="refundsSummary">
+                  <!-- Refunds summary will be inserted here -->
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const toggleBtn = document.getElementById('toggle-sidebar');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const closeBtn = document.getElementById('close-sidebar');
+
+    toggleBtn?.addEventListener('click', () => {
+      sidebar.classList.add('show');
+      overlay.classList.add('show');
+    });
+
+    overlay?.addEventListener('click', () => {
+      sidebar.classList.remove('show');
+      overlay.classList.remove('show');
+    });
+
+    closeBtn?.addEventListener('click', () => {
+      sidebar.classList.remove('show');
+      overlay.classList.remove('show');
+    });
+
+    // Load user name from localStorage
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (currentUser) {
+      const sidebarUserNameEl = document.getElementById('sidebar-user-name');
+      if (sidebarUserNameEl) {
+        if (currentUser.firstname && currentUser.lastname) {
+          sidebarUserNameEl.textContent = `${currentUser.firstname} ${currentUser.lastname}`;
+        } else if (currentUser.username) {
+          sidebarUserNameEl.textContent = currentUser.username;
+        }
+      }
+    }
+
+    // Handle "View All" links
+    document.querySelectorAll('.card-link[data-section]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const sectionId = link.getAttribute('data-section');
+        const navLinks = document.querySelectorAll('.nav-link[data-section]');
+        const sections = document.querySelectorAll('.admin-section');
+        
+        // Hide all sections
+        sections.forEach(sec => sec.classList.add('d-none'));
+        
+        // Show target section
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+          targetSection.classList.remove('d-none');
+        }
+        
+        // Update active nav link
+        navLinks.forEach(l => l.classList.remove('active'));
+        const activeLink = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
+        if (activeLink) {
+          activeLink.classList.add('active');
+        }
+      });
+    });
+  </script>
+
+  <script src="../js/adminscript.js"></script>
+</body>
+</html>
