@@ -1683,6 +1683,28 @@ app.get('/api/ping', (req, res) => {
   });
 });
 
+// Debug route to list all registered routes
+app.get('/api/routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
+      routes.push(`${methods} ${middleware.route.path}`);
+    }
+  });
+  res.json({ routes, total: routes.length });
+});
+
+// Catch-all for undefined routes
+app.use((req, res) => {
+  res.status(404).json({ 
+    error: 'Route not found', 
+    path: req.path,
+    method: req.method,
+    message: `The route ${req.method} ${req.path} does not exist.`
+  });
+});
+
 // ============================================
 // START SERVER (only after database is ready)
 // ============================================
