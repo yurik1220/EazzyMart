@@ -58,18 +58,6 @@ app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files ONLY if they exist (don't interfere with API routes)
-const publicPath = path.join(__dirname, 'public');
-if (fs.existsSync(publicPath)) {
-  app.use(express.static(publicPath));
-}
-
-// Serve uploaded files
-const uploadsPath = path.join(__dirname, 'uploads');
-if (fs.existsSync(uploadsPath)) {
-  app.use('/uploads', express.static(uploadsPath));
-}
-
 app.use(session({
   secret: 'super-secret-key',
   resave: false,
