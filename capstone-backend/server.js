@@ -17,12 +17,33 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // CORS configuration - allow frontend domain and all origins
-app.use(cors({
-  origin: true,  // Allow all origins (you can restrict this later)
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow all origins for now (you can restrict this later)
+    callback(null, true);
+    
+    // To restrict to specific domains, use:
+    // const allowedOrigins = ['https://eazzymart-frontend.onrender.com', 'http://localhost:3000'];
+    // if (allowedOrigins.indexOf(origin) !== -1) {
+    //   callback(null, true);
+    // } else {
+    //   callback(new Error('Not allowed by CORS'));
+    // }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
@@ -1604,9 +1625,14 @@ app.post("/send-otp", async (req, res) => {
       },
     });
     
-    // Verify transporter connection
-    await transporter.verify();
-    console.log('✅ Email transporter verified');
+    // Verify transporter connection (don't fail if email service is down)
+    try {
+      await transporter.verify();
+      console.log('✅ Email transporter verified');
+    } catch (verifyError) {
+      console.warn('⚠️ Email transporter verification failed:', verifyError.message);
+      // Continue anyway - email might still work
+    }
 
     const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
     const expires = Date.now() + 5 * 60 * 1000; // expires in 5 minutes
@@ -1804,23 +1830,29 @@ app.use((req, res) => {
 // ============================================
 // Wait for database to be ready before starting server
 (async () => {
-  // Wait a bit for database to initialize
-  let attempts = 0;
-  while (!db && attempts < 50) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    attempts++;
-  }
-  
-  if (!db) {
-    console.error('❌ Database failed to initialize. Starting server anyway but routes may fail.');
-  }
-  
-  app.listen(port, '0.0.0.0', () => {
-    console.log(`✅ Server is running on port ${port}`);
-    if (db) {
-      console.log('✅ Database is ready');
-    } else {
-      console.warn('⚠️ Database not ready yet');
+  try {
+    // Wait a bit for database to initialize
+    let attempts = 0;
+    while (!db && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
-  });
+    
+    if (!db) {
+      console.error('❌ Database failed to initialize. Starting server anyway but routes may fail.');
+    }
+    
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`✅ Server is running on port ${port}`);
+      console.log(`✅ Server accessible at http://0.0.0.0:${port}`);
+      if (db) {
+        console.log('✅ Database is ready');
+      } else {
+        console.warn('⚠️ Database not ready yet');
+      }
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
 })();
