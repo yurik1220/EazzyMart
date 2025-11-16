@@ -1604,7 +1604,7 @@ app.post("/send-otp", async (req, res) => {
     const expires = Date.now() + 5 * 60 * 1000; // expires in 5 minutes
     otpStore[email] = { otp, expires };
 
-    await transporter.sendMail({
+    const mailResult = await transporter.sendMail({
       from: '"EazzyMart" <nodomailer@gmail.com>',
       to: email,
       subject: "Your OTP Code",
@@ -1612,12 +1612,30 @@ app.post("/send-otp", async (req, res) => {
       html: `<h2>Your OTP Code</h2><p>Your OTP is <strong>${otp}</strong>. It will expire in 5 minutes.</p>`,
     });
 
-    console.log(`✅ OTP sent to ${email}`);
+    console.log(`✅ OTP sent to ${email}`, mailResult.messageId);
     // Don't send OTP in response for security (remove in production or use only for testing)
     res.json({ success: true, message: "OTP sent successfully" });
   } catch (error) {
     console.error("❌ Send OTP error:", error);
-    res.status(500).json({ success: false, message: "Failed to send email. Please try again later." });
+    console.error("❌ Error details:", {
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode,
+      message: error.message
+    });
+    
+    // Provide more specific error messages
+    let errorMessage = "Failed to send email. Please try again later.";
+    if (error.code === 'EAUTH') {
+      errorMessage = "Email authentication failed. Please contact support.";
+    } else if (error.code === 'ECONNECTION') {
+      errorMessage = "Could not connect to email server. Please try again later.";
+    } else if (error.response) {
+      errorMessage = `Email server error: ${error.response}`;
+    }
+    
+    res.status(500).json({ success: false, message: errorMessage });
   }
 });
 

@@ -288,7 +288,17 @@
 
       // Send OTP
       let otpResult = false;
-      await SendOtp(username);
+      try {
+        await SendOtp(username);
+      } catch (err) {
+        Swal.fire({ 
+          icon: 'error', 
+          title: 'Failed to Send OTP', 
+          text: err.message || 'Please try again later.' 
+        });
+        return;
+      }
+      
       await Swal.fire({
       title: 'Input OTP',
         text: 'We sent you an OTP in your email to verify your account.',
@@ -343,14 +353,29 @@
 
     // === SEND OTP ===
     async function SendOtp(email) {
-      const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:3000'
-        : 'https://eazzymart-backend.onrender.com';
-      const res = await fetch(`${API_BASE_URL}/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({email})
-      })
+      try {
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+          ? 'http://localhost:3000'
+          : 'https://eazzymart-backend.onrender.com';
+        const res = await fetch(`${API_BASE_URL}/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({email})
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          console.error('OTP send error:', data);
+          throw new Error(data.message || 'Failed to send OTP');
+        }
+        
+        console.log('OTP sent successfully:', data);
+        return true;
+      } catch (err) {
+        console.error('SendOtp error:', err);
+        throw err;
+      }
     };
 
     // === verify OTP ===
