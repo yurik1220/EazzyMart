@@ -1578,31 +1578,46 @@ app.get("/api/sales/report", async (req, res) => {
 // OTP
 // ============================================
 app.post("/send-otp", async (req, res) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: "nodomailer@gmail.com",
-      pass: "tilwuymdmlgftizy", // Google App Password
-    },
-  });
-
-  const { email } = req.body;
-  const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
-  const expires = Date.now() + 5 * 60 * 1000; // expires in 5 minutes
-  otpStore[email] = { otp, expires };
-
   try {
+    const { email } = req.body;
+    
+    // Validate email
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: "nodomailer@gmail.com",
+        pass: "tilwuymdmlgftizy", // Google App Password
+      },
+    });
+
+    const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+    const expires = Date.now() + 5 * 60 * 1000; // expires in 5 minutes
+    otpStore[email] = { otp, expires };
+
     await transporter.sendMail({
-      from: '"Your App" <darylbano123@gmail.com>',
+      from: '"EazzyMart" <nodomailer@gmail.com>',
       to: email,
       subject: "Your OTP Code",
       text: `Your OTP is ${otp}. It will expire in 5 minutes.`,
+      html: `<h2>Your OTP Code</h2><p>Your OTP is <strong>${otp}</strong>. It will expire in 5 minutes.</p>`,
     });
 
-    res.json({ success: true, otp });
+    console.log(`✅ OTP sent to ${email}`);
+    // Don't send OTP in response for security (remove in production or use only for testing)
+    res.json({ success: true, message: "OTP sent successfully" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Failed to send email" });
+    console.error("❌ Send OTP error:", error);
+    res.status(500).json({ success: false, message: "Failed to send email. Please try again later." });
   }
 });
 
