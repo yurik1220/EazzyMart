@@ -1592,13 +1592,21 @@ app.post("/send-otp", async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid email format" });
     }
 
+    // Use environment variables if available, otherwise use hardcoded values
+    const emailUser = process.env.EMAIL_USER || "nodomailer@gmail.com";
+    const emailPass = process.env.EMAIL_PASS || "tilwuymdmlgftizy";
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "nodomailer@gmail.com",
-        pass: "tilwuymdmlgftizy", // Google App Password
+        user: emailUser,
+        pass: emailPass, // Google App Password
       },
     });
+    
+    // Verify transporter connection
+    await transporter.verify();
+    console.log('✅ Email transporter verified');
 
     const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
     const expires = Date.now() + 5 * 60 * 1000; // expires in 5 minutes
@@ -1636,6 +1644,47 @@ app.post("/send-otp", async (req, res) => {
     }
     
     res.status(500).json({ success: false, message: errorMessage });
+  }
+});
+
+// Test email endpoint (for debugging)
+app.post("/test-email", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    const emailUser = process.env.EMAIL_USER || "nodomailer@gmail.com";
+    const emailPass = process.env.EMAIL_PASS || "tilwuymdmlgftizy";
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: emailUser,
+        pass: emailPass,
+      },
+    });
+
+    await transporter.verify();
+    
+    await transporter.sendMail({
+      from: '"EazzyMart Test" <nodomailer@gmail.com>',
+      to: email,
+      subject: "Test Email from EazzyMart",
+      text: "This is a test email. If you receive this, email is working!",
+      html: "<h2>Test Email</h2><p>This is a test email. If you receive this, email is working!</p>",
+    });
+
+    res.json({ success: true, message: "Test email sent successfully" });
+  } catch (error) {
+    console.error("Test email error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      code: error.code,
+      response: error.response 
+    });
   }
 });
 
