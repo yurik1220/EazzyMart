@@ -1425,9 +1425,25 @@ function formatDate(dateString) {
       console.error('Error fetching customers:', err);
     }
 
+    // Fetch refunds
+    let allRefunds = [];
+    try {
+      const refundsRes = await fetch(window.getApiUrl('api/return-refund'));
+      if (refundsRes.ok) {
+        const refundsData = await refundsRes.json();
+        allRefunds = refundsData.success ? refundsData.requests : [];
+      }
+    } catch (err) {
+      console.error('Error fetching refunds:', err);
+    }
+
     // Calculate totals
     const totalProducts = localItems.length;
-    const totalSales = allOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const grossSales = allOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const totalRefunds = allRefunds
+      .filter(r => r.status === 'Refunded')
+      .reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0);
+    const totalSales = grossSales - totalRefunds;
     const totalOrders = allOrders.length;
     const totalCustomers = customers.length;
 

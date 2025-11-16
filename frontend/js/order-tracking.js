@@ -135,6 +135,11 @@
         uiStatusLabel = 'Cancelled';
         completedOrders.push(transformOrder(order, uiStatus, uiStatusLabel, products));
         return;
+      } else if (status === 'Rejected') {
+        uiStatus = 'rejected';
+        uiStatusLabel = 'Rejected';
+        completedOrders.push(transformOrder(order, uiStatus, uiStatusLabel, products));
+        return;
       } else {
         // Default to ongoing
         ongoingOrders.push(transformOrder(order, uiStatus, uiStatusLabel, products));

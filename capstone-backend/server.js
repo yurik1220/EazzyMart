@@ -1535,7 +1535,7 @@ app.get("/api/return-refund", async (req, res) => {
         o.payment_method,
         o.order_status,
         o.user_id as order_user_id,
-        u.username as customer_name
+        (u.firstname || ' ' || u.lastname) as customer_name
       FROM return_refund_requests r
       LEFT JOIN orders o ON r.order_id = o.order_id
       LEFT JOIN users u ON r.user_id = u.id
