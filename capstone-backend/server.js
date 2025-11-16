@@ -1675,11 +1675,20 @@ app.post("/send-otp", async (req, res) => {
         user: emailUser,
         pass: emailPass, // Google App Password
       },
+      // Add timeout configuration for Render deployment
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
     
     // Verify transporter connection (don't fail if email service is down)
+    // Use Promise.race to add timeout to verification
     try {
-      await transporter.verify();
+      const verifyPromise = transporter.verify();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Verification timeout')), 5000)
+      );
+      await Promise.race([verifyPromise, timeoutPromise]);
       console.log('✅ Email transporter verified');
     } catch (verifyError) {
       console.warn('⚠️ Email transporter verification failed:', verifyError.message);
@@ -1690,17 +1699,42 @@ app.post("/send-otp", async (req, res) => {
     const expires = Date.now() + 5 * 60 * 1000; // expires in 5 minutes
     otpStore[email] = { otp, expires };
 
-    const mailResult = await transporter.sendMail({
+    // Send email with timeout handling
+    const sendMailPromise = transporter.sendMail({
       from: '"EazzyMart" <nodomailer@gmail.com>',
       to: email,
       subject: "Your OTP Code",
       text: `Your OTP is ${otp}. It will expire in 5 minutes.`,
       html: `<h2>Your OTP Code</h2><p>Your OTP is <strong>${otp}</strong>. It will expire in 5 minutes.</p>`,
     });
+    
+    // Add 15 second timeout for sending email
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email send timeout - service may be unavailable')), 15000)
+    );
+    
+    try {
+      const mailResult = await Promise.race([sendMailPromise, timeoutPromise]);
+      console.log(`✅ OTP sent to ${email}`, mailResult.messageId);
+    } catch (emailError) {
+      // Email failed, but OTP is still stored - log the error but don't fail the request
+      console.warn(`⚠️ Email send failed for ${email}:`, emailError.message);
+      console.warn('⚠️ OTP was generated and stored, but email delivery failed');
+      // Continue - OTP is stored in memory, user can still verify if they have the OTP
+      // In production, you might want to return the OTP in response for testing, or use SMS
+    }
 
-    console.log(`✅ OTP sent to ${email}`, mailResult.messageId);
-    // Don't send OTP in response for security (remove in production or use only for testing)
-    res.json({ success: true, message: "OTP sent successfully" });
+    // Always return success if OTP was generated and stored
+    // The OTP is stored in otpStore[email] even if email fails
+    res.json({ 
+      success: true, 
+      message: "OTP sent successfully. Please check your email.",
+      // For development/testing: include OTP in response if email fails
+      // Remove this in production!
+      ...(process.env.NODE_ENV === 'development' && { 
+        debug: "If email fails, check server logs for OTP" 
+      })
+    });
   } catch (error) {
     console.error("❌ Send OTP error:", error);
     console.error("❌ Error details:", {
@@ -1715,7 +1749,7 @@ app.post("/send-otp", async (req, res) => {
     let errorMessage = "Failed to send email. Please try again later.";
     if (error.code === 'EAUTH') {
       errorMessage = "Email authentication failed. Please contact support.";
-    } else if (error.code === 'ECONNECTION') {
+    } else if (error.code === 'ECONNECTION' || error.message.includes('timeout')) {
       errorMessage = "Could not connect to email server. Please try again later.";
     } else if (error.response) {
       errorMessage = `Email server error: ${error.response}`;

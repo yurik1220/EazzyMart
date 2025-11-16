@@ -332,13 +332,13 @@
               role: 'customer',
               firstname,
               lastname,
-              birthdate: `${month} ${day}, ${year}`,
+              birthDate: `${month} ${day}, ${year}`,
               gender
             })
           });
 
           const data = await res.json();
-          if (!res.ok) throw new Error(data.message || 'Registration failed');
+          if (!res.ok || !data.success) throw new Error(data.message || 'Registration failed');
 
           Swal.fire({ icon: 'success', title: 'Account Created!', text: 'You can now log in.', confirmButtonColor: '#28a745' });
           e.target.reset();
@@ -405,14 +405,14 @@
       }
 
       try {
-        const res = await fetch(window.getApiUrl('api/login'), {
+        const res = await fetch(window.getApiUrl('api/customer/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password, role: 'customer' })
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Invalid credentials');
+        if (!res.ok || !data.success) throw new Error(data.message || 'Invalid credentials');
         localStorage.setItem('currentUser', JSON.stringify(data.user));
 
         Swal.fire({ icon: 'success', title: 'Login Successful!', text: `Welcome, ${data.user.firstname} ${data.user.lastname}!`, confirmButtonColor: '#28a745' })
