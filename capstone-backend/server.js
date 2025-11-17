@@ -11,9 +11,13 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const { Resend } = require('resend');
 
-// SQLite dependencies
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
+// SQLite dependencies (only load if using SQLite)
+let sqlite3, open;
+const USE_POSTGRES = process.env.DB_TYPE === 'postgres';
+if (!USE_POSTGRES) {
+  sqlite3 = require('sqlite3');
+  ({ open } = require('sqlite'));
+}
 
 const upload = multer();
 const app = express();
@@ -69,16 +73,70 @@ app.use(session({
 }));
 
 // ============================================
-// SQLITE DATABASE CONNECTION
+// DATABASE CONNECTION (PostgreSQL or SQLite)
 // ============================================
 let db;
 const otpStore = {};
 
+// PostgreSQL support
+const { Pool } = require('pg');
+
 (async () => {
-  db = await open({
-    filename: path.join(__dirname, 'grocery.db'),
-    driver: sqlite3.Database
-  });
+  if (USE_POSTGRES) {
+    // PostgreSQL (Neon) Connection
+    console.log('🔄 Initializing PostgreSQL connection...');
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    });
+    
+    // Test connection
+    const client = await pool.connect();
+    const result = await client.query('SELECT NOW() as now, version() as version');
+    console.log('✅ PostgreSQL connected:', result.rows[0].version.split(',')[0]);
+    client.release();
+    
+    // Create wrapper to match SQLite API
+    db = {
+      async run(sql, params = []) {
+        // Convert ? placeholders to $1, $2, $3, etc.
+        let counter = 0;
+        const converted = sql.replace(/\?/g, () => `$${++counter}`);
+        const result = await pool.query(converted, params);
+        return { changes: result.rowCount, lastID: result.rows[0]?.id };
+      },
+      async get(sql, params = []) {
+        // Convert ? placeholders to $1, $2, $3, etc.
+        let counter = 0;
+        const converted = sql.replace(/\?/g, () => `$${++counter}`);
+        const result = await pool.query(converted, params);
+        return result.rows[0] || null;
+      },
+      async all(sql, params = []) {
+        // Convert ? placeholders to $1, $2, $3, etc.
+        let counter = 0;
+        const converted = sql.replace(/\?/g, () => `$${++counter}`);
+        const result = await pool.query(converted, params);
+        return result.rows;
+      },
+      async exec(sql) {
+        return await pool.query(sql);
+      }
+    };
+    
+    console.log('✅ PostgreSQL database ready');
+  } else {
+    // SQLite Connection
+    console.log('🔄 Initializing SQLite connection...');
+    db = await open({
+      filename: path.join(__dirname, 'grocery.db'),
+      driver: sqlite3.Database
+    });
+    console.log('✅ SQLite database ready at grocery.db');
+  }
+
+  // Initialize tables if not exist (SQLite only - PostgreSQL should already have tables)
+  if (!USE_POSTGRES) {
 
   // Initialize tables if not exist
   await db.exec(`
@@ -287,8 +345,7 @@ const otpStore = {};
     console.error('⚠️ Migration error:', err.message);
     console.error('⚠️ Full error:', err);
   }
-
-  console.log('✅ SQLite database ready at grocery.db');
+  } // End of SQLite-only initialization
   
   // Run auto-completion check after database is ready
   autoCompleteDeliveries();
@@ -1883,7 +1940,7 @@ app.get('/', (req, res) => {
   res.json({ 
     ok: true, 
     message: 'EazzyMart Backend API is running',
-    database: 'SQLite',
+    database: USE_POSTGRES ? 'PostgreSQL (Neon)' : 'SQLite',
     endpoints: {
       health: '/api/ping',
       items: '/api/items',
@@ -1898,10 +1955,12 @@ app.get('/', (req, res) => {
 // HEALTH CHECK
 // ============================================
 app.get('/api/ping', (req, res) => {
+  const dbType = USE_POSTGRES ? 'postgres' : 'SQLite';
   res.json({ 
     ok: true, 
-    message: 'Server is running with SQLite',
-    databaseReady: !!db 
+    message: `Server is running with ${dbType}`,
+    databaseReady: !!db,
+    databaseType: USE_POSTGRES ? 'postgres' : 'sqlite'
   });
 });
 
