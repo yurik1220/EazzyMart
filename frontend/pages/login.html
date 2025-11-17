@@ -195,7 +195,7 @@
         <div class="form-check mb-3">
           <input class="form-check-input" type="checkbox" id="agree-terms" required>
           <label class="form-check-label" for="agree-terms">
-            I agree to the <a href="#" id="open-terms">Terms and Conditions</a>.
+            I agree to the <a href="#" id="open-terms">Terms and Privacy Policy</a>.
           </label>
         </div>
 
@@ -223,7 +223,13 @@
             <li>Your data will be securely stored and used only for account purposes.</li>
             <li>You agree not to share your password or misuse the platform.</li>
             <li>Violations of these terms may lead to account suspension.</li>
-            <li>You can review our <a href="#">Privacy Policy</a> at any time.</li>
+          </ul>
+          <h6 class="mt-3">Privacy Policy</h6>
+          <ul>
+            <li>We collect only the information required to provide our services.</li>
+            <li>Your personal data is encrypted at rest and in transit and will never be sold or shared without consent.</li>
+            <li>You can request data deletion or export anytime by contacting privacy@eazzymart.com.</li>
+            <li>We log account activity to help protect you from unauthorized access.</li>
           </ul>
           <p>Thank you for being part of our community!</p>
         </div>
@@ -274,6 +280,7 @@
       e.preventDefault();
       termsModal.show();
     });
+
 
     // === POPULATE BIRTHDAY OPTIONS ===
     const daySelect = document.getElementById('birth-day');

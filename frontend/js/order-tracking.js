@@ -260,7 +260,8 @@
         payment: order.payment || order.payment_method || 'Cash On Delivery',
         type: order.type || order.order_type || 'Delivery',
         rawStatus: order.status || order.order_status || 'Pending',
-        estimated_delivery_datetime: order.estimated_delivery_datetime || null
+        estimated_delivery_datetime: order.estimated_delivery_datetime || null,
+        cancellationReason: order.reason || order.cancellation_reason || order.cancel_reason || order.reject_reason || null
       };
     }
 
@@ -1004,6 +1005,25 @@
         }
       }
 
+      // Show cancellation/rejection reason if applicable
+      let cancellationReasonHTML = '';
+      const isCancelledOrRejected = uiOrder.rawStatus === 'Cancelled' || uiOrder.rawStatus === 'Rejected';
+      if (isCancelledOrRejected) {
+        const reasonText = (uiOrder.cancellationReason || order.reason || '').trim();
+        const reasonDisplay = reasonText ? escapeHtml(reasonText) : '<span style="color: #A0AEC0;">No reason was provided.</span>';
+        cancellationReasonHTML = `
+          <div style="margin-top: 12px;">
+            <div style="font-weight: 600; color: #B91C1C; margin-bottom: 6px; font-size: 14px;">
+              <i class="fas fa-exclamation-circle" style="margin-right: 6px;"></i>
+              ${uiOrder.rawStatus === 'Rejected' ? 'Rejection Reason' : 'Cancellation Reason'}
+            </div>
+            <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 6px; padding: 12px; color: #7F1D1D; font-size: 13px;">
+              ${reasonDisplay}
+            </div>
+          </div>
+        `;
+      }
+
       // Build items list HTML
       const itemsListHTML = uiOrder.items.map((item, index) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #E5E5E5;">
@@ -1076,6 +1096,7 @@
             </div>
 
             <!-- Estimated Delivery Time -->
+            ${cancellationReasonHTML}
             ${estimatedDeliveryHTML}
 
             <!-- Order Items -->

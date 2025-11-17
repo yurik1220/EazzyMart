@@ -253,16 +253,29 @@ function openBrowse() {
       }
     }
 
+    // Rendering lock to prevent concurrent renders
+    let isRendering = false;
+    
     // Render list — merge API data with local `products` so local stock changes persist
     // If a filtered list is provided, use it directly without fetching from API
     async function renderProducts(list = null, skipApiFetch = false) {
       if (!productList) return;
-      productList.innerHTML = '';
       
-      let source;
+      // Prevent concurrent renders
+      if (isRendering) {
+        console.log('⏸️ Render already in progress, skipping duplicate call');
+        return;
+      }
       
-      // If skipApiFetch is true or list is provided (filtered), use the list directly
-      if (skipApiFetch && list && Array.isArray(list) && list.length > 0) {
+      isRendering = true;
+      
+      try {
+        productList.innerHTML = '';
+        
+        let source;
+        
+        // If skipApiFetch is true or list is provided (filtered), use the list directly
+        if (skipApiFetch && list && Array.isArray(list) && list.length > 0) {
         console.log('Using provided filtered list directly, skipping API fetch');
         // Update products array with latest stock from API if available (non-blocking)
         getItemsfromDB().then(apiData => {
@@ -349,58 +362,64 @@ function openBrowse() {
         }
       });
       
-      console.log('Rendering products - Cart quantities:', cartQuantities, 'Cart object:', cart);
+        console.log('Rendering products - Cart quantities:', cartQuantities, 'Cart object:', cart);
 
-      // Render the source array (Shopee Style)
-      source.forEach(product => {
-        const name = (product.name || product.names || 'Unnamed Product').toString();
-        const price = Number(product.price || 0);
-        const baseStock = Number(product.stock || 0);
-        // Subtract cart quantity from available stock for display and validation
-        const cartQty = cartQuantities[String(product.id)] || 0;
-        const availableStock = Math.max(0, baseStock - cartQty);
-        const category = product.category || 'Uncategorized';
-        const image = product.images || 'https://via.placeholder.com/200';
-        const oldPrice = price * 1.2; // Simulated old price for discount
-        const discount = Math.round((1 - price / oldPrice) * 100);
+        // Render the source array (Shopee Style)
+        source.forEach(product => {
+          const name = (product.name || product.names || 'Unnamed Product').toString();
+          const price = Number(product.price || 0);
+          const baseStock = Number(product.stock || 0);
+          // Subtract cart quantity from available stock for display and validation
+          const cartQty = cartQuantities[String(product.id)] || 0;
+          const availableStock = Math.max(0, baseStock - cartQty);
+          const category = product.category || 'Uncategorized';
+          const image = product.images || 'https://via.placeholder.com/200';
+          const oldPrice = price * 1.2; // Simulated old price for discount
+          const discount = Math.round((1 - price / oldPrice) * 100);
 
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.style.cursor = 'pointer';
-        card.setAttribute('data-product-id', product.id);
-        card.innerHTML = `
-          <div class="product-image-wrapper">
-            <img src="${image}" alt="${escapeHtml(name)}">
-          </div>
-          <div class="product-info">
-            <div class="product-name">${escapeHtml(name)}</div>
-            <div class="product-price-row">
-              <span class="product-price">₱${price?.toFixed(2)}</span>
+          const card = document.createElement('div');
+          card.className = 'product-card';
+          card.style.cursor = 'pointer';
+          card.setAttribute('data-product-id', product.id);
+          card.innerHTML = `
+            <div class="product-image-wrapper">
+              <img src="${image}" alt="${escapeHtml(name)}">
             </div>
-            <div class="product-category">${escapeHtml(category)}</div>
-            <button class="add-to-cart-btn" data-id="${product.id}" ${availableStock <= 0 ? 'disabled' : ''} onclick="event.stopPropagation();">
-              ${availableStock <= 0 ? 'Out of Stock' : 'Add to Cart'}
-            </button>
-          </div>
-        `;
-        productList.appendChild(card);
-        
-        // Make card clickable to open modal
-        card.addEventListener('click', (e) => {
-          // Don't open modal if clicking the button
-          if (e.target.closest('.add-to-cart-btn')) return;
-          openProductModal(product, availableStock, baseStock, cartQty);
+            <div class="product-info">
+              <div class="product-name">${escapeHtml(name)}</div>
+              <div class="product-price-row">
+                <span class="product-price">₱${price?.toFixed(2)}</span>
+              </div>
+              <div class="product-category">${escapeHtml(category)}</div>
+              <button class="add-to-cart-btn" data-id="${product.id}" ${availableStock <= 0 ? 'disabled' : ''} onclick="event.stopPropagation();">
+                ${availableStock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+              </button>
+            </div>
+          `;
+          productList.appendChild(card);
+          
+          // Make card clickable to open modal
+          card.addEventListener('click', (e) => {
+            // Don't open modal if clicking the button
+            if (e.target.closest('.add-to-cart-btn')) return;
+            openProductModal(product, availableStock, baseStock, cartQty);
+          });
         });
-      });
 
-      // attach handlers to add buttons (safe)
-      productList.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-        btn.removeEventListener('click', onAddBtnClick); // safe remove
-        btn.addEventListener('click', onAddBtnClick);
-      });
+        // attach handlers to add buttons (safe)
+        productList.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+          btn.removeEventListener('click', onAddBtnClick); // safe remove
+          btn.addEventListener('click', onAddBtnClick);
+        });
 
-      // persist the most recent products into storage (deduped)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+        // persist the most recent products into storage (deduped)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+      } catch (error) {
+        console.error('Error rendering products:', error);
+      } finally {
+        // Always release rendering lock
+        isRendering = false;
+      }
     }
 
     // helpful small escaping for text
@@ -741,7 +760,7 @@ let items = cartItemsArr.reduce((c, i) => c + (Number(i.qty) || 0), 0);
 
 let gcashtr = "";
 if (payment === 'GCash') {
-  await Swal.fire({
+  const gcashModal = await Swal.fire({
    title: 'Input transaction number',
     text: 'Please scan the GCash QR code below to pay.',
     imageUrl: window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))+ '/../assets/images/gcash_qr.png', // 👈 put your QR image path here
@@ -756,14 +775,15 @@ if (payment === 'GCash') {
     confirmButtonColor: '#d33',
     cancelButtonColor: '#6c757d',
     inputValidator: value => !value ? 'Transaction number is required!' : null
-  }).then(result => {
-    if (result.isConfirmed) {
-      gcashtr = result.value;
-      console.log("trnumber", gcashtr);
-    } else {
-      return;
-    }
   });
+
+  if (gcashModal.isConfirmed) {
+    gcashtr = gcashModal.value;
+    console.log("trnumber", gcashtr);
+  } else {
+    console.log('❌ GCash payment cancelled by user – aborting order placement');
+    return; // Stop submission if user cancels the GCash modal
+  }
 }
 
 // Create new order object

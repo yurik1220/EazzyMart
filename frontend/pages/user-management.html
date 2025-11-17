@@ -387,13 +387,6 @@
               </select>
             </div>
 
-            <div class="form-group">
-              <label for="isVerified" class="form-label">Verification Status</label>
-              <select id="isVerified" class="form-select">
-                <option value="0">Not Verified</option>
-                <option value="1">Verified</option>
-              </select>
-            </div>
           </div>
 
           <div class="form-actions-bar">
@@ -440,7 +433,6 @@
               <th>Last Name</th>
               <th>Birth Date</th>
               <th>Gender</th>
-              <th>Verified</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -537,7 +529,6 @@
           <td>${u.lastname || ''}</td>
           <td>${u.birthDate ? new Date(u.birthDate).toISOString().split('T')[0] : ''}</td>
           <td>${u.gender || ''}</td>
-          <td><span class="verified-badge ${u.isVerified ? 'yes' : 'no'}">${u.isVerified ? 'Yes' : 'No'}</span></td>
           <td>
             <div class="action-buttons">
               <button class="btn btn-sm btn-warning" onclick="editUser(${u.id})">Edit</button>
@@ -575,8 +566,7 @@
         firstname: document.getElementById('firstname').value,
         lastname: document.getElementById('lastname').value,
         birthDate: document.getElementById('birthDate').value,
-        gender: document.getElementById('gender').value,
-        isVerified: parseInt(document.getElementById('isVerified').value)
+        gender: document.getElementById('gender').value
       };
 
       try {
@@ -672,7 +662,6 @@
       document.getElementById('lastname').value = u.lastname || '';
       document.getElementById('birthDate').value = u.birthDate ? new Date(u.birthDate).toISOString().split('T')[0] : '';
       document.getElementById('gender').value = u.gender || '';
-      document.getElementById('isVerified').value = u.isVerified ? '1' : '0';
 
       document.getElementById('username').disabled = true;
     }

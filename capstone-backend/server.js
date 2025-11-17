@@ -182,6 +182,27 @@ const otpStore = {};
       console.warn('⚠️ Could not reset sequences (they might not exist yet):', seqErr.message);
     }
     
+    // Add cancellation_reason column to orders table if it doesn't exist (PostgreSQL)
+    console.log('🔄 Checking for cancellation_reason column in orders table...');
+    try {
+      // Check if column exists
+      const columnCheck = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'orders' AND column_name = 'cancellation_reason'
+      `);
+      
+      if (columnCheck.rows.length === 0) {
+        console.log('🔄 Adding cancellation_reason column to orders table...');
+        await pool.query('ALTER TABLE orders ADD COLUMN cancellation_reason TEXT');
+        console.log('✅ Added cancellation_reason column');
+      } else {
+        console.log('✅ cancellation_reason column already exists');
+      }
+    } catch (colErr) {
+      console.warn('⚠️ Could not add cancellation_reason column:', colErr.message);
+    }
+    
     console.log('✅ PostgreSQL database ready');
   } else {
     // SQLite Connection
@@ -354,14 +375,21 @@ const otpStore = {};
       const ordersTableInfo = await db.all(`PRAGMA table_info(orders)`);
       const ordersColumnNames = ordersTableInfo.map(col => col.name);
       const hasEstimatedDelivery = ordersColumnNames.includes('estimated_delivery_datetime');
+      const hasCancellationReason = ordersColumnNames.includes('cancellation_reason');
       
       if (!hasEstimatedDelivery) {
         console.log('🔄 Adding estimated_delivery_datetime column to orders table...');
         await db.run(`ALTER TABLE orders ADD COLUMN estimated_delivery_datetime DATETIME`);
         console.log('✅ Added estimated_delivery_datetime column');
       }
+      
+      if (!hasCancellationReason) {
+        console.log('🔄 Adding cancellation_reason column to orders table...');
+        await db.run(`ALTER TABLE orders ADD COLUMN cancellation_reason TEXT`);
+        console.log('✅ Added cancellation_reason column');
+      }
     } catch (err) {
-      console.warn('⚠️ Could not check/add estimated_delivery_datetime column:', err.message);
+      console.warn('⚠️ Could not check/add orders table columns:', err.message);
     }
     
     if (migrationNeeded) {
@@ -857,9 +885,9 @@ app.get("/api/sales", async (req, res) => {
           ? `${order.firstname} ${order.lastname}`.trim()
           : (order.createdbyuser || order.contact_number || 'Guest');
 
-        // Get reason from sales table if order is cancelled
-        let reason = null;
-        if (order.order_status === 'Cancelled') {
+        // Get cancellation/rejection reason (prioritize orders table, fallback to sales table)
+        let reason = order.cancellation_reason || null;
+        if (!reason && (order.order_status === 'Cancelled' || order.order_status === 'Rejected')) {
           try {
             const sale = await db.get('SELECT reason FROM sales WHERE order_id = ?', [order.order_id]);
             reason = sale?.reason || null;
@@ -1054,8 +1082,10 @@ app.get("/api/orders/customer", async (req, res) => {
       result.push({
         ...order,
         items: items,
-        // Explicitly include estimated_delivery_datetime to ensure it's in the response
-        estimated_delivery_datetime: order.estimated_delivery_datetime || null
+        // Explicitly include these fields to ensure they're in the response
+        estimated_delivery_datetime: order.estimated_delivery_datetime || null,
+        cancellation_reason: order.cancellation_reason || null,
+        reason: order.cancellation_reason || null // Also include as 'reason' for backward compatibility
       });
     }
 
@@ -1270,10 +1300,11 @@ app.put("/api/orders/:orderId/cancel", async (req, res) => {
     // Restore stock before cancelling/rejecting
     await restoreOrderStock(orderId);
 
+    // Update orders table with status and reason
     await db.run(
-      `UPDATE orders SET order_status = ?, updated_at = datetime('now', 'localtime') 
+      `UPDATE orders SET order_status = ?, cancellation_reason = ?, updated_at = datetime('now', 'localtime') 
        WHERE order_id = ?`,
-      [finalStatus, orderId]
+      [finalStatus, reason || '', orderId]
     );
 
     // Also update sales table for backward compatibility (optional)
@@ -1349,11 +1380,11 @@ app.put("/api/orders/:orderId/cancel-customer", async (req, res) => {
     // Restore stock before cancelling (only for Pending orders)
     await restoreOrderStock(orderId);
 
-    // Update orders table
+    // Update orders table with status and reason
     await db.run(
-      `UPDATE orders SET order_status = 'Cancelled', updated_at = datetime('now', 'localtime') 
+      `UPDATE orders SET order_status = 'Cancelled', cancellation_reason = ?, updated_at = datetime('now', 'localtime') 
        WHERE order_id = ?`,
-      [orderId]
+      [reason.trim(), orderId]
     );
 
     // Also update sales table for backward compatibility (optional)
