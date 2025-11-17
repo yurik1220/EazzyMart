@@ -488,6 +488,10 @@ async function initializeCashier() {
         showConfirmButton: false
       });
 
+      // Notify customer page to refresh (if they're viewing their orders)
+      productUpdateChannel.postMessage({ action: 'return-refund-updated', status: newStatus });
+      console.log('🔔 Notified customer page about return/refund status update');
+
       // Refresh the return/refund requests list
       renderReturnRefundRequests();
       // Also refresh tab counts

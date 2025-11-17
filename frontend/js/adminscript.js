@@ -1,6 +1,11 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const STORAGE_KEY = 'groceryItems';
   const ORDERS_KEY = 'orders';
+  
+  // Hide admin dashboard immediately to prevent glimpse
+  const adminContainer = document.querySelector('.admin-container');
+  if (adminContainer) adminContainer.style.display = 'none';
+  
   const currentUser = JSON.parse(localStorage.getItem('currentUser'));
   
   let products = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -8,11 +13,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (!currentUser) {
     returnToIndexPage('login.html');
+    return;
   } else if (currentUser.role.toLowerCase() === 'cashier') {
     returnToIndexPage('Cashier.html');
+    return;
   }  else if (currentUser.role.toLowerCase() === 'customer') {
     returnToIndexPage('Index.html');
-  } else {}
+    return;
+  } else {
+    // ✅ Access granted for admin — show the dashboard
+    if (adminContainer) {
+      adminContainer.style.display = '';
+      adminContainer.classList.add('visible');
+    }
+  }
 
   // === LISTEN FOR NEW ORDERS FROM CUSTOMERS ===
   const orderChannel = new BroadcastChannel('orders');

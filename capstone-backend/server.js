@@ -11,12 +11,14 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const { Resend } = require('resend');
 
-// SQLite dependencies (only load if using SQLite)
-let sqlite3, open;
+// Conditional database imports
+let sqlite3, open, Pool;
 const USE_POSTGRES = process.env.DB_TYPE === 'postgres';
 if (!USE_POSTGRES) {
   sqlite3 = require('sqlite3');
   ({ open } = require('sqlite'));
+} else {
+  ({ Pool } = require('pg'));
 }
 
 const upload = multer();
@@ -78,9 +80,6 @@ app.use(session({
 let db;
 const otpStore = {};
 
-// PostgreSQL support
-const { Pool } = require('pg');
-
 (async () => {
   if (USE_POSTGRES) {
     // PostgreSQL (Neon) Connection
@@ -91,38 +90,97 @@ const { Pool } = require('pg');
     });
     
     // Test connection
-    const client = await pool.connect();
-    const result = await client.query('SELECT NOW() as now, version() as version');
-    console.log('✅ PostgreSQL connected:', result.rows[0].version.split(',')[0]);
-    client.release();
+    try {
+      const client = await pool.connect();
+      const result = await client.query('SELECT version()');
+      console.log('✅ PostgreSQL connected:', result.rows[0].version);
+      client.release();
+    } catch (err) {
+      console.error('❌ PostgreSQL connection failed:', err);
+      throw err;
+    }
+
+    // Create wrapper functions to match SQLite API
+    const convertPlaceholders = (sql) => {
+      let index = 0;
+      return sql.replace(/\?/g, () => `$${++index}`);
+    };
+
+    const convertSQLiteFunctions = (sql) => {
+      // Convert SQLite datetime functions to PostgreSQL
+      sql = sql.replace(/datetime\s*\(\s*'now'\s*,\s*'localtime'\s*\)/gi, 'CURRENT_TIMESTAMP');
+      sql = sql.replace(/datetime\s*\(\s*'now'\s*\)/gi, 'CURRENT_TIMESTAMP');
+      sql = sql.replace(/date\s*\(\s*'now'\s*\)/gi, 'CURRENT_DATE');
+      // Handle datetime with interval for date subtraction (e.g., datetime('now', '-1 day'))
+      sql = sql.replace(/datetime\s*\(\s*'now'\s*,\s*'-(\d+)\s+day'\s*\)/gi, "CURRENT_TIMESTAMP - INTERVAL '$1 day'");
+      return sql;
+    };
     
     // Create wrapper to match SQLite API
     db = {
-      async run(sql, params = []) {
-        // Convert ? placeholders to $1, $2, $3, etc.
-        let counter = 0;
-        const converted = sql.replace(/\?/g, () => `$${++counter}`);
-        const result = await pool.query(converted, params);
-        return { changes: result.rowCount, lastID: result.rows[0]?.id };
+      run: async (sql, params = []) => {
+        let pgSql = convertPlaceholders(sql);
+        pgSql = convertSQLiteFunctions(pgSql);
+        
+        // Add RETURNING clause for INSERT statements if not already present
+        // Different tables use different primary key names
+        const isInsert = pgSql.trim().toUpperCase().startsWith('INSERT');
+        const hasReturning = pgSql.toUpperCase().includes('RETURNING');
+        
+        if (isInsert && !hasReturning) {
+          // Determine which primary key to return based on table name
+          if (pgSql.toUpperCase().includes('INSERT INTO ORDERS')) {
+            pgSql += ' RETURNING order_id';
+          } else if (pgSql.toUpperCase().includes('INSERT INTO ORDER_ITEMS')) {
+            pgSql += ' RETURNING order_item_id';
+          } else {
+            // Default: most tables use 'id'
+            pgSql += ' RETURNING id';
+          }
+        }
+        
+        const result = await pool.query(pgSql, params);
+        return { 
+          lastID: result.rows[0]?.id || result.rows[0]?.order_id || result.rows[0]?.order_item_id || null,
+          changes: result.rowCount 
+        };
       },
-      async get(sql, params = []) {
-        // Convert ? placeholders to $1, $2, $3, etc.
-        let counter = 0;
-        const converted = sql.replace(/\?/g, () => `$${++counter}`);
-        const result = await pool.query(converted, params);
+      get: async (sql, params = []) => {
+        let pgSql = convertPlaceholders(sql);
+        pgSql = convertSQLiteFunctions(pgSql);
+        const result = await pool.query(pgSql, params);
         return result.rows[0] || null;
       },
-      async all(sql, params = []) {
-        // Convert ? placeholders to $1, $2, $3, etc.
-        let counter = 0;
-        const converted = sql.replace(/\?/g, () => `$${++counter}`);
-        const result = await pool.query(converted, params);
+      all: async (sql, params = []) => {
+        let pgSql = convertPlaceholders(sql);
+        pgSql = convertSQLiteFunctions(pgSql);
+        const result = await pool.query(pgSql, params);
         return result.rows;
       },
-      async exec(sql) {
-        return await pool.query(sql);
+      exec: async (sql) => {
+        let pgSql = convertSQLiteFunctions(sql);
+        await pool.query(pgSql);
       }
     };
+    
+    // Fix PostgreSQL sequences after data migration
+    console.log('🔄 Fixing PostgreSQL sequences...');
+    try {
+      // Reset all sequences to max ID + 1 for each table
+      await pool.query(`
+        SELECT setval('items_id_seq', COALESCE((SELECT MAX(id) FROM items), 0) + 1, false);
+        SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
+        SELECT setval('sales_id_seq', COALESCE((SELECT MAX(id) FROM sales), 0) + 1, false);
+        SELECT setval('stock_entries_id_seq', COALESCE((SELECT MAX(id) FROM stock_entries), 0) + 1, false);
+        SELECT setval('salesorder_id_seq', COALESCE((SELECT MAX(id) FROM salesorder), 0) + 1, false);
+        SELECT setval('return_refund_requests_id_seq', COALESCE((SELECT MAX(id) FROM return_refund_requests), 0) + 1, false);
+        SELECT setval('order_items_order_item_id_seq', COALESCE((SELECT MAX(order_item_id) FROM order_items), 0) + 1, false);
+        SELECT setval('tax_reports_id_seq', COALESCE((SELECT MAX(id) FROM tax_reports), 0) + 1, false);
+      `);
+      console.log('✅ PostgreSQL sequences reset successfully');
+    } catch (seqErr) {
+      console.warn('⚠️ Could not reset sequences (they might not exist yet):', seqErr.message);
+    }
     
     console.log('✅ PostgreSQL database ready');
   } else {
@@ -911,14 +969,15 @@ app.post("/api/sales", async (req, res) => {
     );
 
     // Insert into salesorder for backward compatibility
-    items.forEach(item => {
-      db.run('INSERT INTO salesorder (name, price, qty, salesid) values (?, ?, ?, ?)', [
+    const salesId = sales.lastID;
+    for (const item of items) {
+      await db.run('INSERT INTO salesorder (name, price, qty, salesid) values (?, ?, ?, ?)', [
         item.name || item.names,
         item.price, 
         item.qty || item.quantity,
-        sales.lastID
+        salesId
       ]);
-    });
+    }
 
     res.json({ 
       success: true, 
@@ -1656,8 +1715,30 @@ app.put("/api/return-refund/:id/status", async (req, res) => {
       [status, admin_notes || null, id]
     );
 
-    // If status is "Returned", update order status if needed
-    if (status === 'Returned') {
+    // If status is "Returned" or "Approved", restore stock for the order
+    if (status === 'Returned' || status === 'Approved') {
+      try {
+        // Get order items to restore stock
+        const orderItems = await db.all(`
+          SELECT product_id, quantity
+          FROM order_items
+          WHERE order_id = ?
+        `, [request.order_id]);
+
+        // Restore stock for each item
+        for (const item of orderItems) {
+          await db.run(
+            'UPDATE items SET stock = stock + ? WHERE id = ?',
+            [item.quantity, item.product_id]
+          );
+          console.log(`✅ Restored ${item.quantity} units of product ${item.product_id} to stock (Return/Refund ${status})`);
+        }
+      } catch (stockErr) {
+        console.error('Error restoring stock for return/refund:', stockErr);
+        // Don't fail the status update if stock restoration fails
+      }
+
+      // Update order status to "Returned" if not already
       await db.run(
         `UPDATE orders SET order_status = 'Returned', updated_at = datetime('now', 'localtime') WHERE order_id = ?`,
         [request.order_id]
