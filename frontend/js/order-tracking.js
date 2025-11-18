@@ -102,6 +102,31 @@
     // Create a set of order IDs for quick lookup
     const userOrderIds = new Set(userOrders.map(order => order.order_id || order.id).filter(Boolean));
 
+    // Fetch return/refund requests FIRST to filter orders
+    let returnRefundRequests = [];
+    const orderIdsWithReturnRefund = new Set();
+    
+    if (currentUser && currentUser.username) {
+      try {
+        const response = await fetch(window.getApiUrl(`api/return-refund?username=${encodeURIComponent(currentUser.username)}`));
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.requests)) {
+            returnRefundRequests = data.requests;
+            // Build set of order IDs that have return/refund requests
+            returnRefundRequests.forEach(request => {
+              if (request.order_id) {
+                orderIdsWithReturnRefund.add(request.order_id);
+              }
+            });
+            console.log(`✅ Found ${returnRefundRequests.length} return/refund requests, affecting ${orderIdsWithReturnRefund.size} orders`);
+          }
+        }
+      } catch (err) {
+        console.debug('Error fetching return/refund requests:', err);
+      }
+    }
+
     // Categorize orders
     const ongoingOrders = [];
     const completedOrders = [];
@@ -116,6 +141,11 @@
 
       // Skip orders with status "Returned" - they belong in return/refund tab only
       if (status === 'Returned') {
+        return; // Don't add to ongoing or completed
+      }
+
+      // Skip orders that have return/refund requests - they only show in return/refund tab
+      if (orderIdsWithReturnRefund.has(orderId)) {
         return; // Don't add to ongoing or completed
       }
 
@@ -156,45 +186,8 @@
       ongoingOrders.push(transformOrder(order, uiStatus, uiStatusLabel, products));
     });
 
-    // Fetch return/refund requests for current user (after orders are categorized)
-    let returnRefundRequests = [];
-    if (currentUser && currentUser.username) {
-      try {
-            // Use username parameter to filter on backend
-            const response = await fetch(window.getApiUrl(`api/return-refund?username=${encodeURIComponent(currentUser.username)}`));
-            if (response.ok) {
-              const data = await response.json();
-              if (data.success && Array.isArray(data.requests)) {
-                // Backend already filtered by username/user_id, so trust it
-                // Only do additional filtering if we have specific concerns
-                returnRefundRequests = data.requests;
-                
-                // Optional: Log if any requests don't match user's orders (for debugging)
-                if (userOrderIds.size > 0) {
-                  const unmatched = returnRefundRequests.filter(r => !userOrderIds.has(r.order_id));
-                  if (unmatched.length > 0) {
-                    console.warn('⚠️ Some return/refund requests have order IDs not in user orders:', unmatched);
-                  }
-                }
-                
-                console.log(`✅ Found ${returnRefundRequests.length} return/refund requests for user ${currentUser.username}`, {
-                  totalRequests: data.requests.length,
-                  userOrderIds: Array.from(userOrderIds),
-                  filteredRequests: returnRefundRequests,
-                  requests: returnRefundRequests
-                });
-              } else {
-                console.warn('⚠️ Backend returned invalid data:', data);
-                returnRefundRequests = [];
-              }
-            } else {
-              console.error('❌ Failed to fetch return/refund requests:', response.status, response.statusText);
-              returnRefundRequests = [];
-            }
-      } catch (err) {
-        console.error('Error fetching return/refund requests:', err);
-      }
-    }
+    // Note: return/refund requests are now fetched BEFORE order categorization (see lines 105-128)
+    // This allows us to filter out orders that have return/refund requests from the ongoing/completed tabs
 
     // Format date helper function (accessible to all rendering functions)
     const formatDate = (dateString) => {

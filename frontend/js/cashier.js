@@ -284,11 +284,6 @@ async function initializeCashier() {
                 <i class="bi bi-check2-circle"></i> Mark Completed
               </button>
             ` : order.status === 'Out for Delivery' ? `
-              ${order.type === 'Delivery' ? `
-                <button class="btn btn-sm btn-secondary btn-update-delivery-time me-1" data-id="${orderId}" title="Update Estimated Delivery Time">
-                  <i class="bi bi-clock"></i> Set Delivery Time
-                </button>
-              ` : ''}
               <button class="btn btn-sm btn-primary btn-delivered" data-id="${orderId}">
                 <i class="bi bi-check2-circle"></i> Mark Delivered
               </button>
@@ -541,12 +536,6 @@ async function initializeCashier() {
     document.querySelectorAll('.btn-ready-for-pickup').forEach(btn => {
       btn.onclick = () => {
         updateStatus(btn.dataset.id, 'Ready for Pick up');
-      };
-    });
-
-    document.querySelectorAll('.btn-update-delivery-time').forEach(btn => {
-      btn.onclick = () => {
-        promptEstimatedDeliveryTime(btn.dataset.id, true); // true = update mode
       };
     });
 
