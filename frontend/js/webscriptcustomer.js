@@ -555,21 +555,18 @@ const paymentRadios = document.querySelectorAll('input[name="paymentMethod"]');
 if (paymentRadios.length > 0) {
   const checked = Array.from(paymentRadios).find(r => r.checked);
   if (checked) {
-    const val = checked.value.trim().toLowerCase();
-    if (val.includes('gcash')) payment = 'GCash';
-    else payment = 'Cash On Delivery';
+    const val = checked.value.trim();
+    payment = val; // Use the exact value from radio button
   }
 } else {
   // Fallback: look for dropdowns or inputs
   const paymentInput = document.querySelector('#payment, #paymentMethod, #paymentMethodSelect');
   if (paymentInput && paymentInput.value) {
-    const val = paymentInput.value.trim().toLowerCase();
-    if (val.includes('gcash')) payment = 'GCash';
-    else payment = 'Cash On Delivery';
+    payment = paymentInput.value.trim(); // Use exact value from dropdown
   }
 }
 
-// Confirm what’s detected (for testing, optional)
+// Confirm what's detected (for testing, optional)
 console.log('✅ Detected Payment Method:', payment);
 
 const type = (orderTypeSelect && orderTypeSelect.value)
@@ -587,6 +584,17 @@ const cartItemsArr = Object.values(cart);
 let total = cartItemsArr.reduce((sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 0), 0);
 let items = cartItemsArr.reduce((c, i) => c + (Number(i.qty) || 0), 0);
 
+// Apply delivery fee if order type is Delivery and total is below minimum
+let deliveryFee = 0;
+const minOrderAmount = window.MIN_ORDER_FOR_FREE_DELIVERY || 300;
+const deliveryFeeAmount = window.DELIVERY_FEE || 50;
+
+if (type === 'Delivery' && total < minOrderAmount) {
+  deliveryFee = deliveryFeeAmount;
+  total += deliveryFee;
+  console.log(`📦 Delivery fee of ₱${deliveryFee} applied (order below ₱${minOrderAmount})`);
+}
+
 // Create new order object
 const newOrder = {
   id: Date.now(),
@@ -596,7 +604,8 @@ const newOrder = {
   payment,
   type,
   address,
-  status: 'Pending'
+  status: 'Pending',
+  deliveryFee: deliveryFee // Track delivery fee for reference
 };
 
 // Save order locally
@@ -639,6 +648,8 @@ if (window.Swal && typeof Swal.fire === 'function') {
     html: `
       <p>Thank you, <strong>${escapeHtml(customer)}</strong>!</p>
       <p><b>${escapeHtml(type)}</b> — ₱${Number(total).toFixed(2)}</p>
+      ${deliveryFee > 0 ? `<p style="color: #666; font-size: 0.9em;"><i>Includes delivery fee: ₱${deliveryFee.toFixed(2)}</i></p>` : ''}
+      ${type === 'Delivery' && deliveryFee === 0 ? `<p style="color: #28a745; font-size: 0.9em;"><i>✓ Free delivery (order ≥ ₱${minOrderAmount})</i></p>` : ''}
       <p><b>Payment Method:</b> ${escapeHtml(payment)}</p>
       ${type === 'Delivery' ? `<p><i>${escapeHtml(address)}</i></p>` : ''}
     `,

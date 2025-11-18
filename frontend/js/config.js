@@ -26,3 +26,12 @@ window.getApiUrl = function(endpoint) {
   return `${window.API_BASE_URL}/${cleanEndpoint}`;
 };
 
+// ============================================
+// DELIVERY FEE CONFIGURATION
+// ============================================
+// Minimum order amount for free delivery (in PHP)
+window.MIN_ORDER_FOR_FREE_DELIVERY = 300;
+
+// Delivery fee amount (in PHP) - applied when order is below minimum
+window.DELIVERY_FEE = 50;
+

@@ -109,7 +109,33 @@
         </select>
       </div>
 
-      <button type="submit" class="btn-success">
+      <!-- Order Summary -->
+      <div class="card mt-4" style="background: #f8f9fa; border: 1px solid #dee2e6;">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Order Summary</h5>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span>Subtotal:</span>
+            <strong id="checkout-subtotal">₱0.00</strong>
+          </div>
+          <div id="delivery-fee-row" style="display: none; justify-content: space-between; margin-bottom: 10px; color: #666;">
+            <span>Delivery Fee:</span>
+            <strong id="checkout-delivery-fee">₱50.00</strong>
+          </div>
+          <div id="free-delivery-row" style="display: none; margin-bottom: 10px; color: #28a745;">
+            <small>✓ Free Delivery (order ≥ ₱300)</small>
+          </div>
+          <div id="min-order-notice" style="display: none; margin-bottom: 10px; padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 0.9em;">
+            <small>📦 Add ₱<span id="amount-needed">0</span> more for free delivery!</small>
+          </div>
+          <hr>
+          <div style="display: flex; justify-content: space-between; font-size: 1.2em;">
+            <strong>Total:</strong>
+            <strong style="color: #ff6b35;" id="checkout-total">₱0.00</strong>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-success mt-3">
         <i class="fas fa-check"></i> Complete Order
       </button>
     </form>
@@ -172,6 +198,60 @@
   <script src="../js/Index.js"></script>
 
   <script>
+    // ============================================
+    // ORDER SUMMARY CALCULATION
+    // ============================================
+    function updateOrderSummary() {
+      const orderType = document.getElementById('orderType')?.value;
+      const cart = JSON.parse(localStorage.getItem('cart')) || {};
+      const cartItems = Object.values(cart);
+      
+      // Calculate subtotal
+      const subtotal = cartItems.reduce((sum, item) => {
+        return sum + (Number(item.price) || 0) * (Number(item.qty) || 0);
+      }, 0);
+      
+      // Get configuration
+      const minOrderAmount = window.MIN_ORDER_FOR_FREE_DELIVERY || 300;
+      const deliveryFeeAmount = window.DELIVERY_FEE || 50;
+      
+      // Calculate delivery fee
+      let deliveryFee = 0;
+      let showDeliveryFee = false;
+      let showFreeDelivery = false;
+      let showMinOrderNotice = false;
+      let amountNeeded = 0;
+      
+      if (orderType === 'Delivery') {
+        if (subtotal < minOrderAmount) {
+          deliveryFee = deliveryFeeAmount;
+          showDeliveryFee = true;
+          amountNeeded = minOrderAmount - subtotal;
+          showMinOrderNotice = true;
+        } else {
+          showFreeDelivery = true;
+        }
+      }
+      
+      const total = subtotal + deliveryFee;
+      
+      // Update UI
+      document.getElementById('checkout-subtotal').textContent = `₱${subtotal.toFixed(2)}`;
+      document.getElementById('checkout-delivery-fee').textContent = `₱${deliveryFee.toFixed(2)}`;
+      document.getElementById('checkout-total').textContent = `₱${total.toFixed(2)}`;
+      document.getElementById('amount-needed').textContent = amountNeeded.toFixed(0);
+      
+      // Show/hide elements
+      document.getElementById('delivery-fee-row').style.display = showDeliveryFee ? 'flex' : 'none';
+      document.getElementById('free-delivery-row').style.display = showFreeDelivery ? 'block' : 'none';
+      document.getElementById('min-order-notice').style.display = showMinOrderNotice ? 'block' : 'none';
+    }
+    
+    // Update order summary on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      updateOrderSummary();
+    });
+
     // Order type change handler
     const orderTypeSelect = document.getElementById('orderType');
     const addressGroup = document.getElementById('address-group');
@@ -266,6 +346,9 @@
           // Update payment methods for Delivery orders
           togglePaymentMethods(false);
         }
+        
+        // Update order summary when order type changes
+        updateOrderSummary();
       });
       
       // Initialize on page load
