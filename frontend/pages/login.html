@@ -141,12 +141,14 @@
       <form id="forgot-form" class="d-none mt-4">
         <h5 class="text-danger mb-3">Forgot Password</h5>
         <div class="mb-3">
-          <input type="text" id="forgot-username" class="form-control" placeholder="Enter your username" required>
+          <input type="email" id="forgot-username" class="form-control" placeholder="Enter your email" required>
         </div>
-        <div class="mb-3">
-          <input type="password" id="new-password" class="form-control" placeholder="Enter new password" required>
+        <div id="forgot-password-fields" class="d-none">
+          <div class="mb-3">
+            <input type="password" id="new-password" class="form-control" placeholder="Enter new password">
+          </div>
         </div>
-        <button type="submit" class="btn btn-warning w-100 mb-3">Reset Password</button>
+        <button type="submit" id="forgot-submit-btn" class="btn btn-warning w-100 mb-3">Send OTP</button>
         <a href="#" id="back-to-login2" class="text-decoration-none">⬅️ Back to Login</a>
       </form>
     </div>
@@ -250,6 +252,7 @@
     const createCard = document.getElementById('create-card');
     const forgotForm = document.getElementById('forgot-form');
     const termsModal = new bootstrap.Modal(document.getElementById('termsModal'));
+    let otpVerified = false;
 
     // === LINK HANDLERS ===
     document.getElementById('create-link').addEventListener('click', e => {
@@ -272,7 +275,11 @@
 
     document.getElementById('back-to-login2').addEventListener('click', e => {
       e.preventDefault();
+      forgotForm.reset();
       forgotForm.classList.add('d-none');
+      document.getElementById('forgot-password-fields').classList.add('d-none');
+      document.getElementById('forgot-submit-btn').textContent = 'Send OTP';
+      otpVerified = false;
       document.getElementById('login-form').classList.remove('d-none');
     });
 
@@ -475,28 +482,92 @@
     forgotForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const username = document.getElementById('forgot-username').value.trim();
-      const newPassword = document.getElementById('new-password').value.trim();
-      if (!username || !newPassword) {
-        Swal.fire({ icon: 'warning', title: 'Missing Fields', text: 'Please fill in all fields.' });
+      const submitBtn = document.getElementById('forgot-submit-btn');
+      const passwordFields = document.getElementById('forgot-password-fields');
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(username)) {
+        Swal.fire({ icon: 'warning', title: 'Invalid email format', text: 'Please enter a valid email address.' });
         return;
       }
 
-      try {
-        const res = await fetch(window.getApiUrl('api/reset-password'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, newPassword })
+      // Step 1: Send OTP
+      if (!otpVerified) {
+        try {
+          await SendOtp(username);
+        } catch (err) {
+          Swal.fire({ 
+            icon: 'error', 
+            title: 'Failed to Send OTP', 
+            text: err.message || 'Please try again later.' 
+          });
+          return;
+        }
+
+        // Step 2: Verify OTP
+        await Swal.fire({
+          title: 'Input OTP',
+          text: 'We sent you an OTP to your email to verify your identity.',
+          input: 'text',
+          inputLabel: 'OTP:',
+          inputPlaceholder: 'Enter OTP number:',
+          showCancelButton: true,
+          confirmButtonText: 'Verify',
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#6c757d',
+          inputValidator: value => !value ? 'OTP number is required!' : null
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            const verified = await VerifyOtp(username, result.value);
+            if (verified === true) {
+              otpVerified = true;
+              passwordFields.classList.remove('d-none');
+              submitBtn.textContent = 'Reset Password';
+              Swal.fire({ 
+                icon: 'success', 
+                title: 'Verified!', 
+                text: 'Please enter your new password.',
+                timer: 2000,
+                showConfirmButton: false
+              });
+            } else {
+              Swal.fire({ 
+                icon: 'error', 
+                title: 'Invalid OTP', 
+                text: 'The OTP you entered is incorrect. Please try again.' 
+              });
+            }
+          }
         });
+      } else {
+        // Step 3: Reset password after OTP verification
+        const newPassword = document.getElementById('new-password').value.trim();
+        if (!newPassword) {
+          Swal.fire({ icon: 'warning', title: 'Missing Fields', text: 'Please enter a new password.' });
+          return;
+        }
 
-        const data = await res.json();
-        if (!res.ok || !data.success) throw new Error(data.message || 'Password reset failed');
+        try {
+          const res = await fetch(window.getApiUrl('api/reset-password'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, newPassword })
+          });
 
-        Swal.fire({ icon: 'success', title: 'Password Reset Successful!', text: 'You can now log in with your new password.' });
-        forgotForm.reset();
-        forgotForm.classList.add('d-none');
-        document.getElementById('login-form').classList.remove('d-none');
-      } catch (err) {
-        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || data.error || 'Password reset failed');
+
+          Swal.fire({ icon: 'success', title: 'Password Reset Successful!', text: 'You can now log in with your new password.' });
+          forgotForm.reset();
+          forgotForm.classList.add('d-none');
+          passwordFields.classList.add('d-none');
+          submitBtn.textContent = 'Send OTP';
+          otpVerified = false;
+          document.getElementById('login-form').classList.remove('d-none');
+        } catch (err) {
+          Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+        }
       }
     });
   </script>

@@ -63,9 +63,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
-app.use(bodyParser.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase payload size limit to 50MB to support base64 image uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use(session({
   secret: 'super-secret-key',
@@ -1637,8 +1638,9 @@ app.post("/api/return-refund", upload.single('image'), async (req, res) => {
       // Save file with unique name
       const fileExt = path.extname(req.file.originalname);
       const fileName = `return-${order_id}-${Date.now()}${fileExt}`;
-      imagePath = path.join('uploads', 'return-refund', fileName);
-      const fullPath = path.join(__dirname, imagePath);
+      // Use forward slashes for URL compatibility (works on all OS)
+      imagePath = `uploads/return-refund/${fileName}`;
+      const fullPath = path.join(__dirname, 'uploads', 'return-refund', fileName);
       
       fs.writeFileSync(fullPath, req.file.buffer);
     }
