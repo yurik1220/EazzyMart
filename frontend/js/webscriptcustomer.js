@@ -378,6 +378,23 @@ function openBrowse() {
 
     // Add to cart
     function addToCart(id) {
+      // Check if user is logged in
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+      if (!currentUser || !currentUser.username) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Login Required',
+          text: 'Please log in to add items to your cart',
+          confirmButtonText: 'Go to Login',
+          confirmButtonColor: '#ee4d2d'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.location.href = 'login.html';
+          }
+        });
+        return;
+      }
+
       const product = findProduct(id);
       if (!product) {
         showNotification('Product not found', 'warning');

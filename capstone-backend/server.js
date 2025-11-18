@@ -697,8 +697,11 @@ app.post('/api/customer/register', async (req, res) => {
       });
     }
 
+    // Convert empty strings to null for timestamp fields (PostgreSQL compatibility)
+    const cleanBirthDate = birthDate && birthDate.trim() !== '' ? birthDate : null;
+
     await db.run(`INSERT INTO users (username, password, role, firstname, lastname, birthDate, gender) VALUES (?, ?, ?, ?, ?, ?, ?)`, [
-      username, password, 'customer', firstname, lastname, birthDate, gender 
+      username, password, 'customer', firstname, lastname, cleanBirthDate, gender 
     ]);
     res.json({ success: true, message: 'Account created successfully' });
   } catch (err) {
@@ -811,8 +814,11 @@ app.post('/api/user', async (req, res) => {
     const existing = await db.get(`SELECT id FROM users WHERE username = ?`, [username]);
     if (existing) return res.status(400).json({ message: 'Username already exists' });
 
+    // Convert empty strings to null for timestamp fields (PostgreSQL compatibility)
+    const cleanBirthDate = birthDate && birthDate.trim() !== '' ? birthDate : null;
+
     await db.run(`INSERT INTO users (username, password, role, firstname, lastname, birthDate, gender) VALUES (?, ?, ?, ?, ?, ?, ?)`, [
-      username, password, role, firstname, lastname, birthDate, gender 
+      username, password, role, firstname, lastname, cleanBirthDate, gender 
     ]);
     res.json({ message: 'Account created successfully' });
   } catch (err) {
@@ -822,23 +828,57 @@ app.post('/api/user', async (req, res) => {
 });
 
 app.put('/api/user/:id', async (req, res) => {
-  const { firstname, lastname, birthDate, gender, role, isVerified } = req.body;
+  const { password, firstname, lastname, birthDate, gender, role, isVerified } = req.body;
   const { id } = req.params;
 
   try {
-    const result = await db.run(`UPDATE users SET firstname = ?, lastname = ?, birthDate = ?, gender = ?, role = ?, isVerified = ? WHERE id = ?`, [
-    firstname,
-    lastname,
-    birthDate,
-    gender,
-    role,
-    isVerified,
-    id
-  ]);
-  if (result.changes === 0)
-    return res.status(404).json({ message: 'User not found' });
-  res.json({ message: 'User ' + id +' has been updated successfully' });
+    // Convert empty strings to null for timestamp fields (PostgreSQL compatibility)
+    const cleanBirthDate = birthDate && birthDate.trim() !== '' ? birthDate : null;
+    
+    // Build update query dynamically based on what fields are provided
+    let updateFields = [];
+    let values = [];
+    
+    if (password !== undefined) {
+      updateFields.push('password = ?');
+      values.push(password);
+    }
+    if (firstname !== undefined) {
+      updateFields.push('firstname = ?');
+      values.push(firstname);
+    }
+    if (lastname !== undefined) {
+      updateFields.push('lastname = ?');
+      values.push(lastname);
+    }
+    if (birthDate !== undefined) {
+      updateFields.push('birthDate = ?');
+      values.push(cleanBirthDate);
+    }
+    if (gender !== undefined) {
+      updateFields.push('gender = ?');
+      values.push(gender);
+    }
+    if (role !== undefined) {
+      updateFields.push('role = ?');
+      values.push(role);
+    }
+    if (isVerified !== undefined) {
+      updateFields.push('isVerified = ?');
+      values.push(isVerified);
+    }
+    
+    // Add id to values for WHERE clause
+    values.push(id);
+    
+    const query = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`;
+    const result = await db.run(query, values);
+    
+    if (result.changes === 0)
+      return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User ' + id +' has been updated successfully' });
   } catch (err) {
+    console.error('Error updating user:', err);
     res.status(500).json({ error: err.message });
   }
 }) 
