@@ -2096,11 +2096,14 @@ if (fs.existsSync(publicPath)) {
   app.use(express.static(publicPath));
 }
 
-// Serve uploaded files
+// Serve uploaded files - Create directory if it doesn't exist and always register middleware
 const uploadsPath = path.join(__dirname, 'uploads');
-if (fs.existsSync(uploadsPath)) {
-  app.use('/uploads', express.static(uploadsPath));
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+  console.log('📁 Created uploads directory');
 }
+app.use('/uploads', express.static(uploadsPath));
+console.log('✅ Static file serving enabled for /uploads');
 
 // Catch-all for undefined routes (MUST be last, after all routes)
 app.use((req, res) => {
