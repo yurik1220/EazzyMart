@@ -35,6 +35,7 @@
     const addressGroup = document.getElementById('address-group'); // May not exist on Cart.html
     const addressInput = document.getElementById('address'); // May not exist on Cart.html
     const contactInput = document.getElementById('contactnumber'); // May not exist on Cart.html
+    const customerNameDisplay = document.getElementById('customer-name-display');
 
         // ===== CUSTOMER LOGIN / REGISTER =====
     const loginForm = document.getElementById('login-form');
@@ -135,6 +136,28 @@
       }
       return fallback;
     }
+
+    function getLoggedInCustomerName(fallback = '') {
+      if (!currentUser) return fallback;
+      const parts = [currentUser.firstname, currentUser.lastname]
+        .filter(Boolean)
+        .map(part => part.trim())
+        .filter(Boolean);
+      const fullName = parts.join(' ').trim();
+      return fullName || currentUser.username || fallback;
+    }
+
+    function syncCustomerNameField() {
+      if (!customerNameDisplay) return;
+      const displayName = getLoggedInCustomerName('Guest');
+      if (customerNameDisplay.tagName === 'INPUT') {
+        customerNameDisplay.value = displayName;
+      } else {
+        customerNameDisplay.textContent = displayName;
+      }
+    }
+
+    syncCustomerNameField();
 
     // ====== SECTION TOGGLE FIX ======
 function toggleVisibility(showSection) {
@@ -730,7 +753,7 @@ function openBrowse() {
     }
 
     // Collect form info safely
-    const customer = getFieldValue(['customerName', 'fullname', 'name'], 'Guest');
+    const customer = getLoggedInCustomerName('') || getFieldValue(['customerName', 'fullname', 'name'], 'Guest');
 
 // --- FIXED PAYMENT METHOD ---
 let payment = 'Cash On Delivery'; // default fallback (match display capitalization)

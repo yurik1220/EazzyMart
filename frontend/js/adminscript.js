@@ -790,8 +790,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             productStats[productName] = {
               qty: 0,
               price: parseFloat(item.price || 0),
-              total: 0,
-              discount: 0
+              total: 0
             };
           }
           const qty = parseInt(item.qty || item.quantity || 0);
@@ -820,7 +819,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td>${stats.qty.toLocaleString()}</td>
           <td>₱${stats.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
           <td>₱${stats.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-          <td>₱${stats.discount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -1058,7 +1056,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       ['Total Orders', document.getElementById('totalOrders')?.textContent || '0'],
       ['Total Items Sold', document.getElementById('totalItemsSold')?.textContent || '0'],
       ['Average Order Value', document.getElementById('averageOrderValue')?.textContent || '₱0.00'],
-      ['Total Discounts', document.getElementById('totalDiscounts')?.textContent || '₱0.00'],
       ['Total Refunds', document.getElementById('totalRefunds')?.textContent || '₱0.00'],
       ['Net Sales', document.getElementById('netSales')?.textContent || '₱0.00']
     ];
@@ -1169,15 +1166,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           tds[0]?.textContent || '',
           tds[1]?.textContent || '',
           tds[2]?.textContent || '',
-          tds[3]?.textContent || '',
-          tds[4]?.textContent || ''
+          tds[3]?.textContent || ''
         ];
       }).filter(row => row[0] !== '');
 
       if (productData.length > 0) {
         doc.autoTable({
           startY: yPos,
-          head: [['Product Name', 'Qty Sold', 'Price', 'Total Sales', 'Discount']],
+          head: [['Product Name', 'Qty Sold', 'Price', 'Total Sales']],
           body: productData,
           theme: 'striped',
           headStyles: { fillColor: [0, 102, 204] },
@@ -1372,14 +1368,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       .filter(r => r.status === 'Refunded')
       .reduce((sum, r) => sum + (parseFloat(r.total_amount) || 0), 0);
 
-    const totalDiscounts = 0;
-    const netSales = totalSalesAmount - totalRefunds - totalDiscounts;
+    const netSales = totalSalesAmount - totalRefunds;
 
     const totalSalesAmountEl = document.getElementById('totalSalesAmount');
     const totalOrdersEl = document.getElementById('totalOrders');
     const totalItemsSoldEl = document.getElementById('totalItemsSold');
     const averageOrderValueEl = document.getElementById('averageOrderValue');
-    const totalDiscountsEl = document.getElementById('totalDiscounts');
     const totalRefundsEl = document.getElementById('totalRefunds');
     const netSalesEl = document.getElementById('netSales');
 
@@ -1387,7 +1381,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (totalOrdersEl) totalOrdersEl.textContent = totalOrders.toLocaleString();
     if (totalItemsSoldEl) totalItemsSoldEl.textContent = totalItemsSold.toLocaleString();
     if (averageOrderValueEl) averageOrderValueEl.textContent = `₱${averageOrderValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    if (totalDiscountsEl) totalDiscountsEl.textContent = `₱${totalDiscounts.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (totalRefundsEl) totalRefundsEl.textContent = `₱${totalRefunds.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (netSalesEl) netSalesEl.textContent = `₱${netSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
@@ -1439,25 +1432,14 @@ function formatDate(dateString) {
       console.error('Error fetching customers:', err);
     }
 
-    // Fetch refunds
-    let allRefunds = [];
-    try {
-      const refundsRes = await fetch(window.getApiUrl('api/return-refund'));
-      if (refundsRes.ok) {
-        const refundsData = await refundsRes.json();
-        allRefunds = refundsData.success ? refundsData.requests : [];
-      }
-    } catch (err) {
-      console.error('Error fetching refunds:', err);
-    }
-
-    // Calculate totals
+    // Calculate totals (only count fulfilled sales)
     const totalProducts = localItems.length;
-    const grossSales = allOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-    const totalRefunds = allRefunds
-      .filter(r => r.status === 'Refunded')
-      .reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0);
-    const totalSales = grossSales - totalRefunds;
+    const saleEligibleStatuses = new Set(['delivered', 'completed']);
+    const completedSales = allOrders.filter(order => {
+      const status = (order.status || '').toLowerCase();
+      return saleEligibleStatuses.has(status);
+    });
+    const totalSales = completedSales.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
     const totalOrders = allOrders.length;
     const totalCustomers = customers.length;
 
